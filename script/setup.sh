@@ -7,23 +7,23 @@ ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
 
 # Install PostgreSQL ==========
 
-# Update package lists
-echo "Updating package lists..."
-sudo apt-get update
+# # Update package lists
+# echo "Updating package lists..."
+# sudo apt-get update
 
-# Install PostgreSQL
-echo "Installing PostgreSQL..."
-sudo apt-get install -y postgresql postgresql-contrib
+# # Install PostgreSQL
+# echo "Installing PostgreSQL..."
+# sudo apt-get install -y postgresql postgresql-contrib
 
-# Start the PostgreSQL service
-echo "Starting PostgreSQL service..."
-sudo systemctl start postgresql
+# # Start the PostgreSQL service
+# echo "Starting PostgreSQL service..."
+# sudo systemctl start postgresql
 
-# Enable PostgreSQL service to start on boot
-echo "Enabling PostgreSQL to start on boot..."
-sudo systemctl enable postgresql
+# # Enable PostgreSQL service to start on boot
+# echo "Enabling PostgreSQL to start on boot..."
+# sudo systemctl enable postgresql
 
-echo "PostgreSQL installation completed successfully."
+# echo "PostgreSQL installation completed successfully."
 
 # Add user to docker group ==========
 sudo usermod -aG docker $USER
@@ -46,13 +46,13 @@ source .venv/bin/activate
 # Install requirements
 pip install -r requirements.txt
 
-# Check if ARTIFACT_ROOT exists, if not, create it with proper permissions
-if [ ! -d "$ARTIFACT_ROOT" ]; then
-  echo "The ARTIFACT_ROOT path does not exist. $ARTIFACT_ROOT"
-  mkdir -p "$ARTIFACT_ROOT"
-  chmod 755 "$ARTIFACT_ROOT" # Adjust permissions as necessary
-else
-  echo "The ARTIFACT_ROOT path exists. $ARTIFACT_ROOT"
-fi
+# # Check if ARTIFACT_ROOT exists, if not, create it with proper permissions
+# if [ ! -d "$ARTIFACT_ROOT" ]; then
+#   echo "The ARTIFACT_ROOT path does not exist. $ARTIFACT_ROOT"
+#   mkdir -p "$ARTIFACT_ROOT"
+#   chmod 755 "$ARTIFACT_ROOT" # Adjust permissions as necessary
+# else
+#   echo "The ARTIFACT_ROOT path exists. $ARTIFACT_ROOT"
+# fi
 
 
