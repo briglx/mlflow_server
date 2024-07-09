@@ -5,6 +5,8 @@ PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
 ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
 
 
+# Install PostgreSQL ==========
+
 # Update package lists
 echo "Updating package lists..."
 sudo apt-get update
@@ -23,7 +25,17 @@ sudo systemctl enable postgresql
 
 echo "PostgreSQL installation completed successfully."
 
+# Add user to docker group ==========
+sudo usermod -aG docker $USER
 
+#=====================
+
+export MLFLOW_S3_ENDPOINT_URL=http://localhost:9000 # Replace this with remote storage endpoint e.g. s3://my-bucket in real use cases
+export AWS_ACCESS_KEY_ID=minio_user
+export AWS_SECRET_ACCESS_KEY=minio_password
+
+
+#====================
 
 # Create virtual environment
 python3 -m venv .venv

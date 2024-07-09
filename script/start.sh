@@ -36,6 +36,7 @@ fi
 
 # Start MLflow server with logging configuration
 mlflow server \
-    --default-artifact-root "$ARTIFACT_ROOT" \
+    --artifacts-destination s3://bucket \
+    --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
     --host "$HOST" --port "$PORT" \
     --gunicorn-opts "--log-config $LOGGING_CONF"
