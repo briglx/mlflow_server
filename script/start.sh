@@ -2,16 +2,16 @@
 
 # Variables
 PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
-ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifact/root"
+ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
 HOST="0.0.0.0"
 PORT=5000
 LOGGING_CONF="mlflow_logging.conf"
 
-# Check if ARTIFACT_ROOT path exists
-if [ -d "$ARTIFACT_ROOT" ]; then
-    echo "The ARTIFACT_ROOT path exists. $ARTIFACT_ROOT"
+# Check if ARTIFACT_ROOT exists, if not, create it with proper permissions
+if [ ! -d "$ARTIFACT_ROOT" ]; then
+  echo "The ARTIFACT_ROOT path does not exist. $ARTIFACT_ROOT"
 else
-    echo "The ARTIFACT_ROOT path does not exist. $ARTIFACT_ROOT"
+  echo "The ARTIFACT_ROOT path exists. $ARTIFACT_ROOT"
 fi
 
 # pyenv, pyenv-virtualenv
