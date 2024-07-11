@@ -39,21 +39,16 @@ fi
 #     --host "$HOST" --port "$PORT"
 
 
-# Anotherway to start it ================================
-# Define paths and environment variables
-export MLFLOW_TRACKING_URI="http://$HOST:$PORT"
-export BACKEND_STORE_URI="sqlite:///mlflow.db"
-export ARTIFACT_ROOT="file:$ARTIFACT_ROOT"
-
-cd "$PROJ_ROOT_PATH" || exit
-
-gunicorn --log-config "$LOGGING_CONF" -b "$HOST:$PORT" -w 4 mlflow.server:app
-
+# Testing backend store =================================
+# mlflow server  \
+#   --host "$HOST" --port "$PORT" \
+#   --serve-artifacts  \
+#   --backend-store-uri sqlite:///mlflow.db \
 
 
 # # Start MLflow server with logging configuration ========
-# mlflow server \
-#     --artifacts-destination s3://bucket \
-#     --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
-#     --host "$HOST" --port "$PORT" \
-#     --gunicorn-opts "--log-config $LOGGING_CONF"
+mlflow server \
+    --artifacts-destination s3://bucket \
+    --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
+    --host "$HOST" --port "$PORT" \
+    --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
