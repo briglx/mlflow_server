@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 User=azureuser   # Replace with the username that runs the server
+Group=azureuser
 WorkingDirectory=/home/azureuser/mlflow_server  # Replace with your MLflow project directory
 ExecStart=/home/azureuser/mlflow_server/script/start_mlflow.sh
 Restart=always

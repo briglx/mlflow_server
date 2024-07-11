@@ -34,6 +34,7 @@ if [ -f "${PROJ_ROOT_PATH}/.venv/bin/activate" ]; then
   . "$activate_path"
 fi
 
+echo "Starting MLflow server with the following parameters:"
 mlflow server  \
   --host "$HOST" --port "$PORT" \
   --serve-artifacts  \

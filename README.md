@@ -15,6 +15,24 @@ docker compose up -d
 ./script/start.sh
 ```
 
+Configure systemd file `/etc/systemd/system/mlflow.service` to start the MLFlow server on boot.
+
+```bash
+sudo cp ./mlflow.service /etc/systemd/system/mlflow.service
+
+# Start the service
+sudo systemctl daemon-reload
+sudo systemctl start mlflow
+sudo systemctl enable mlflow
+
+# Check the status
+sudo systemctl start mlflow
+sudo systemctl stop mlflow
+sudo systemctl restart mlflow
+sudo systemctl status mlflow
+journalctl -u mlflow
+```
+
 # Development
 
 You'll need to set up a development environment if you want to develop a new feature or fix issues. The project uses a docker based devcontainer to ensure a consistent development environment.
