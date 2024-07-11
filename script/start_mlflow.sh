@@ -2,7 +2,7 @@
 
 # Variables
 PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
-ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
+ARTIFACT_ROOT="${PROJ_ROOT_PATH}/mlartifacts"
 HOST="0.0.0.0"
 PORT=5000
 LOGGING_CONF="mlflow_logging.conf"
@@ -34,12 +34,24 @@ if [ -f "${PROJ_ROOT_PATH}/.venv/bin/activate" ]; then
   . "$activate_path"
 fi
 
-# Simple startup
-mlflow server \
-    --host "$HOST" --port "$PORT"
+# Simple startup ========================================
+# mlflow server \
+#     --host "$HOST" --port "$PORT"
 
 
-# # Start MLflow server with logging configuration
+# Anotherway to start it ================================
+# Define paths and environment variables
+export MLFLOW_TRACKING_URI="http://$HOST:$PORT"
+export BACKEND_STORE_URI="sqlite:///mlflow.db"
+export ARTIFACT_ROOT="file:$ARTIFACT_ROOT"
+
+cd "$PROJ_ROOT_PATH" || exit
+
+gunicorn --log-config "$LOGGING_CONF" -b "$HOST:$PORT" -w 4 mlflow.server:app
+
+
+
+# # Start MLflow server with logging configuration ========
 # mlflow server \
 #     --artifacts-destination s3://bucket \
 #     --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \

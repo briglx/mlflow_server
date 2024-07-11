@@ -1,0 +1,15 @@
+[Unit]
+Description=MLflow Server
+After=network.target
+
+[Service]
+User=azureuser   # Replace with the username that runs the server
+WorkingDirectory=/home/azureuser/mlflow_server  # Replace with your MLflow project directory
+ExecStart=/home/azureuser/mlflow_server/script/start_mlflow.sh
+Restart=always
+Environment="MLFLOW_TRACKING_URI=http://0.0.0.0:5000"
+Environment="BACKEND_STORE_URI=sqlite:///mlflow.db"
+Environment="ARTIFACT_ROOT=file:/home/azureuser/mlflow_server/mlartifacts"
+
+[Install]
+WantedBy=multi-user.target
