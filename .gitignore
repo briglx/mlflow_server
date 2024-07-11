@@ -1,2 +1,10 @@
+# Server files
+mlartifacts/
+mlflow.db
+mlflow_error.log
+mlflow_server.log
+mlruns/
+
+# environment files
 .env
 .venv

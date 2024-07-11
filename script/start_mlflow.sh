@@ -34,21 +34,15 @@ if [ -f "${PROJ_ROOT_PATH}/.venv/bin/activate" ]; then
   . "$activate_path"
 fi
 
-# Simple startup ========================================
-# mlflow server \
-#     --host "$HOST" --port "$PORT"
-
-
-# Testing backend store =================================
-# mlflow server  \
-#   --host "$HOST" --port "$PORT" \
-#   --serve-artifacts  \
-#   --backend-store-uri sqlite:///mlflow.db \
-
+mlflow server  \
+  --host "$HOST" --port "$PORT" \
+  --serve-artifacts  \
+  --backend-store-uri sqlite:///mlflow.db \
+  --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
 
 # # Start MLflow server with logging configuration ========
-mlflow server \
-    --artifacts-destination s3://bucket \
-    --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
-    --host "$HOST" --port "$PORT" \
-    --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
+# mlflow server \
+#     --artifacts-destination s3://bucket \
+#     --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
+#     --host "$HOST" --port "$PORT" \
+#     --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
