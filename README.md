@@ -1,6 +1,6 @@
 # MLFlow Server
 
-Example project to show how to run an MLFlow tracking server and artifact store
+Example project to show how to run an MLFlow tracking server and artifact store.
 
 ![Architecture Overview](./docs/architecture_overview.svg)
 
@@ -122,10 +122,9 @@ shellcheck -x ./script/*.sh
 
 # Tracking Server
 
-Login to the tracking server `http://<TRACKING_SERVER_IP>:5000` 
+Login to the tracking server `http://<TRACKING_SERVER_IP>:5000`
 
 ```bash
 # SSH into the Tracking Server
 ssh -i ~/.ssh/id_rsa azureuser@$TRACKING_SERVER_IP
 ```
-
