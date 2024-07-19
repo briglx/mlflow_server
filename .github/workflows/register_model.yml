@@ -37,12 +37,22 @@ jobs:
         model_name=${{ github.event.client_payload.model_name }}
         version=${{ github.event.client_payload.model_version }}
 
-        python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version"
+        artifact_path=$(python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version")
+
+        echo "::set-output name=artifact_path::$artifact_path"
 
       env:
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
         MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
         MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+
+    - name: Register Model
+      run: |
+
+        model_name=${{ github.event.client_payload.model_name }}
+        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+
+        python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
 
     # - name: Get Model Artifact Url
     #   run: |

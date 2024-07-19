@@ -18,7 +18,7 @@ Example GitHub App that can trigger a workflow in a repository.
             * Send the installation access token in the Authorization header of the API requests.
     * Manually with [`workflow_dispatch` event](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event)
 * Use the [MLFlow REST API](https://mlflow.org/docs/latest/rest-api.html) to download artifacts
-
+* [Create Models from assets](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-models-mlflow?view=azureml-api-2#creating-models-from-assets) in Azure Machine Learning
 
 ## Steps
 

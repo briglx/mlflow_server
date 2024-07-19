@@ -2,66 +2,51 @@
 
 import argparse
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 import mlflow
 from mlflow import MlflowClient
+from utils import configure_logging
 
 load_dotenv()
 
-
-def get_run_id(model_name, version=None):
-    """Get the run_id of the latest or specified version of a model."""
-    client = MlflowClient()
-    # model_versions = client.get_model_version(model_name, version)
-
-    registered_model = client.get_registered_model(model_name)
-    model_versions = registered_model.latest_versions
-
-    if version is None:
-        # Get latest if no version is specified
-        model_version = model_versions[-1]
-        return model_version.run_id
-
-    for model_version in model_versions:
-        if model_version.version == version:
-            return model_version.run_id
-
-    return None
+logger = configure_logging("get_model_artifacts.log")
 
 
-def main():
+def download_artifact():
     """Download the artifacts of a model from the MLOps tracking server."""
-    # Set the local directory to download the artifacts
-    project_dir = os.path.dirname("..")
-    local_dir = os.path.join(project_dir, "artifacts")
+    logger.info(
+        "Downloading %s version %s artifacts from %s",
+        MODEL_NAME,
+        MODEL_VERSION,
+        TRACKING_SERVER,
+    )
 
-    # Set the tracking server
+    current_file = Path(__file__).resolve()
+    project_dir = os.path.dirname(current_file.parent)
+    artifact_path = os.path.join(project_dir, "artifacts")
+
     mlflow.set_tracking_uri(TRACKING_SERVER)
 
-    try:
-        # get the run id of the most recent model
-        if run_id := get_run_id(MODEL_NAME, MODEL_VERSION) is None:
-            print(f"Run id was not found for {MODEL_NAME} version {MODEL_VERSION}.")
-            return
+    # Set the artifact uri
+    model_uri = (
+        f"models:/{MODEL_NAME}/{MODEL_VERSION}"  # reference model by version or alias
+    )
 
-        # Get the artifact uri for the run
-        artifact_uri = mlflow.get_run(run_id).info.artifact_uri
+    # Set the artifact uri from the model class
+    client = MlflowClient()
+    model_version_info = client.get_model_version(
+        name=MODEL_NAME, version=MODEL_VERSION
+    )
+    model_uri = model_version_info.source
 
-        # Get the last part of the artifact_uri
-        artifact_last = artifact_uri.split("/")[-1]
+    local_artifacts = mlflow.artifacts.download_artifacts(
+        artifact_uri=model_uri, dst_path=artifact_path
+    )
+    logger.info("Artifacts downloaded to %s", local_artifacts)
 
-        # Download all artifacts from the run
-        client = MlflowClient()
-        for artifact in mlflow.artifacts.list_artifacts(artifact_uri):
-            # Remove overlap between artifact_uri and artifact.path
-            relative_artifact_path = artifact.path.replace(artifact_last, "").replace(
-                "/", ""
-            )
-            client.download_artifacts(run_id, relative_artifact_path, local_dir)
-            print(f"Artifact downloaded: {relative_artifact_path} in {local_dir}")
-    except TypeError as e:
-        print(f"Failed to download artifacts: {e}")
+    return local_artifacts
 
 
 if __name__ == "__main__":
@@ -91,4 +76,11 @@ if __name__ == "__main__":
     MODEL_NAME = args.model_name or os.environ.get("MODEL_NAME")
     MODEL_VERSION = args.model_version or os.environ.get("MODEL_VERSION")
 
-    main()
+    local_artifacts_path = download_artifact()
+
+    # pylint: disable=R6103
+    if local_artifacts_path:
+        print(local_artifacts_path)  # Print the artifact URI to standard output
+    else:
+        logger.error("Failed to fetch artifact URI")
+        print("Failed to fetch artifact URI")
