@@ -16,21 +16,24 @@ jobs:
     - name: Get Model Artifact Url
       run: |
 
-        model_name=${{ !github.event.client_payload.model_name }}
-        model_version=${{ !github.event.client_payload.model_version }}
+        model_name=${{ github.event.client_payload.model_name }}
+        model_version=${{ github.event.client_payload.model_version }}
 
         # Get Artifact Url
-        echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-
-        # Debug Output
-        curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-
-        # Parse Artifact Url
-        artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
+        if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
+          echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+          curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+          artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
+        else
+          echo Username and Password not provided
+          echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+          curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+          artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
+        fi
 
         echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
 
     env:
-      MLFLOW_URL: ${{ secrets.MLFLOW_URL }}
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
       MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
       MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}

@@ -85,7 +85,7 @@ def main():
 
     # Payload to send with the request
     payload = {
-        "event_type": "on-demand-test",
+        "event_type": "register_model",
         "client_payload": {"model_name": MODEL_NAME, "model_version": MODEL_VERSION},
     }
 
@@ -122,6 +122,11 @@ if __name__ == "__main__":
         help="GitHub token",
     )
     parser.add_argument(
+        "--tracking_uri",
+        "-u",
+        help="MLflow Host",
+    )
+    parser.add_argument(
         "--model_name",
         "-m",
         help="Model Name",
@@ -136,10 +141,9 @@ if __name__ == "__main__":
 
     OWNER = args.owner or os.environ.get("REPO_OWNER")
     REPO = args.repo or os.environ.get("REPO_NAME")
-    TOKEN = args.token or os.environ.get("REPO_TOKEN")
+    CLIENT_ID = os.environ.get("GITHUB_APP_CLIENT_ID")
     MODEL_NAME = args.model_name or os.environ.get("MODEL_NAME")
     MODEL_VERSION = args.model_version or os.environ.get("MODEL_VERSION")
-    CLIENT_ID = os.environ.get("GITHUB_APP_CLIENT_ID")
 
     if not OWNER:
         raise ValueError("Owner is required. Have you set the REPO_OWNER env variable?")
@@ -149,8 +153,10 @@ if __name__ == "__main__":
             "Repo name is required. Have you set the REPO_NAME env variable?"
         )
 
-    if not TOKEN:
-        raise ValueError("Token is required. Have you set the REPO_TOKEN env variable?")
+    if not CLIENT_ID:
+        raise ValueError(
+            "Client ID is required. Have you set the GITHUB_APP_CLIENT_ID env variable?"
+        )
 
     if not MODEL_NAME:
         raise ValueError(
