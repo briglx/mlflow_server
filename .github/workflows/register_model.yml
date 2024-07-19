@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [register_model]
 
+env:
+  PYTHON_VERSION: "3.12"
+
 jobs:
 
   deploy:
@@ -11,29 +14,57 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.1
 
-    - name: Get Model Artifact Url
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      id: python
+      uses: actions/setup-python@v5.1.0
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        check-latest: true
+
+    - name: Create Python virtual environment
       run: |
+        python -m venv venv
+        . venv/bin/activate
+        python --version
+        pip install -r requirements.txt
+
+    - name: Download artifacts
+      run: |
+        python --version
 
         model_name=${{ github.event.client_payload.model_name }}
-        model_version=${{ github.event.client_payload.model_version }}
+        version=${{ github.event.client_payload.model_version }}
 
-        # Get Artifact Url
-        if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
-          echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-          curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-          artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
-        else
-          echo Username and Password not provided
-          echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-          curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-          artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
-        fi
+        python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version"
 
-        echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
+      env:
+        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+        MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
 
-    env:
-      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-      MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-      MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+    # - name: Get Model Artifact Url
+    #   run: |
+
+    #     model_name=${{ github.event.client_payload.model_name }}
+    #     model_version=${{ github.event.client_payload.model_version }}
+
+    #     # Get Artifact Url
+    #     if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
+    #       echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+    #       curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+    #       artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
+    #     else
+    #       echo Username and Password not provided
+    #       echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+    #       curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+    #       artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
+    #     fi
+
+    #     echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
+
+    # env:
+    #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+    #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+    #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}

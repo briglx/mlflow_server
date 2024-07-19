@@ -10,3 +10,4 @@ mlruns/
 .venv
 *.pem
 server_app/responses
+artifacts

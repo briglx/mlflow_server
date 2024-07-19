@@ -17,6 +17,8 @@ Example GitHub App that can trigger a workflow in a repository.
                 * you must have a [private key and the ID](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps) of your GitHub App to generate an access token
             * Send the installation access token in the Authorization header of the API requests.
     * Manually with [`workflow_dispatch` event](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event)
+* Use the [MLFlow REST API](https://mlflow.org/docs/latest/rest-api.html) to download artifacts
+
 
 ## Steps
 
