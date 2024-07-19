@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Variables
-PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
-ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
+# PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
+# ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
 
 
 # Install PostgreSQL ==========
@@ -26,7 +26,7 @@ ARTIFACT_ROOT="${PROJ_ROOT_PATH}/artifacts"
 # echo "PostgreSQL installation completed successfully."
 
 # Add user to docker group ==========
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 
 #=====================
 
@@ -36,6 +36,7 @@ export AWS_SECRET_ACCESS_KEY=minio_password
 
 
 #====================
+
 
 # Create virtual environment
 python3 -m venv .venv
@@ -54,5 +55,3 @@ pip install -r requirements.txt
 # else
 #   echo "The ARTIFACT_ROOT path exists. $ARTIFACT_ROOT"
 # fi
-
-

@@ -1,0 +1,36 @@
+name: Register Model to AML Registry
+
+on:
+  repository_dispatch:
+    types: [register_model]
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get Model Artifact Url
+      run: |
+
+        model_name=${{ !github.event.client_payload.model_name }}
+        model_version=${{ !github.event.client_payload.model_version }}
+
+        # Get Artifact Url
+        echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+
+        # Debug Output
+        curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+
+        # Parse Artifact Url
+        artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_URL}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
+
+        echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
+
+    env:
+      MLFLOW_URL: ${{ secrets.MLFLOW_URL }}
+      MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+      MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}

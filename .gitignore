@@ -8,3 +8,5 @@ mlruns/
 # environment files
 .env
 .venv
+*.pem
+server_app/responses
