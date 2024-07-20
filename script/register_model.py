@@ -4,7 +4,7 @@ import argparse
 import os
 
 from azure.ai.ml import MLClient
-from azure.identity import ClientSecretCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from dotenv import load_dotenv
 import mlflow
 from utils import configure_logging
@@ -18,10 +18,15 @@ def register_model():
     """Register a model with Azure machine learning MLFlow tracking server."""
     logger.info("Registering model %s from %s", MODEL_NAME, ARTIFACT_PATH)
 
-    # Create an AML MLFlow client
-    credential = ClientSecretCredential(
-        AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
-    )
+    # pylint: disable=R6103
+    credential = DefaultAzureCredential()
+    if not credential:
+        credential = ClientSecretCredential(
+            tenant_id=AZURE_TENANT_ID,
+            client_id=AZURE_CLIENT_ID,
+            client_secret=AZURE_CLIENT_SECRET,
+        )
+
     ml_client = MLClient(
         credential, AZURE_SUBSCRIPTION_ID, AZURE_ML_RESOURCE_GROUP, AZURE_ML_WORKSPACE
     )
@@ -103,8 +108,8 @@ if __name__ == "__main__":
     AZURE_CLIENT_ID = args.client_id or os.environ.get("AZURE_CLIENT_ID")
     AZURE_CLIENT_SECRET = args.client_secret or os.environ.get("AZURE_CLIENT_SECRET")
 
-    if not AZURE_TENANT_ID:
-        raise ValueError("Azure tenant id is required. Have you set AZURE_TENANT_ID?")
+    # if not AZURE_TENANT_ID:
+    #     raise ValueError("Azure tenant id is required. Have you set AZURE_TENANT_ID?")
 
     if not AZURE_SUBSCRIPTION_ID:
         raise ValueError(
@@ -127,12 +132,12 @@ if __name__ == "__main__":
     if not ARTIFACT_PATH:
         raise ValueError("Artifact path is required. Have you set ARTIFACT_PATH?")
 
-    if not AZURE_CLIENT_ID:
-        raise ValueError("Azure client id is required. Have you set AZURE_CLIENT_ID?")
+    # if not AZURE_CLIENT_ID:
+    #     raise ValueError("Azure client id is required. Have you set AZURE_CLIENT_ID?")
 
-    if not AZURE_CLIENT_SECRET:
-        raise ValueError(
-            "Azure client secret is required. Have you set AZURE_CLIENT_SECRET?"
-        )
+    # if not AZURE_CLIENT_SECRET:
+    #     raise ValueError(
+    #         "Azure client secret is required. Have you set AZURE_CLIENT_SECRET?"
+    #     )
 
     register_model()

@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [register_model]
 
+permissions:
+  id-token: write
+  contents: read
 env:
   PYTHON_VERSION: "3.12"
 
@@ -34,6 +37,9 @@ jobs:
       run: |
         python --version
 
+        # activate virtual environment
+        . venv/bin/activate
+
         model_name=${{ github.event.client_payload.model_name }}
         version=${{ github.event.client_payload.model_version }}
 
@@ -46,13 +52,26 @@ jobs:
         MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
         MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
 
+    - name: 'Az CLI login'
+      uses: azure/login@v2
+      with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
     - name: Register Model
       run: |
+        . venv/bin/activate
 
         model_name=${{ github.event.client_payload.model_name }}
         artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
         python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
+
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_ML_RESOURCE_GROUP: ${{ secrets.AZURE_ML_RESOURCE_GROUP }}
+        AZURE_ML_WORKSPACE: ${{ secrets.AZURE_ML_WORKSPACE }}
 
     # - name: Get Model Artifact Url
     #   run: |
