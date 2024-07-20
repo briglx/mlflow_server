@@ -45,7 +45,7 @@ jobs:
 
         artifact_path=$(python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version")
 
-        echo "::set-output name=artifact_path::$artifact_path"
+        run: echo "artifact_path=$artifact_path" >> $GITHUB_OUTPUT
 
       env:
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
