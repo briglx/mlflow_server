@@ -66,8 +66,6 @@ jobs:
         model_name=${{ github.event.client_payload.model_name }}
         artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
         echo "artifact_path=$artifact_path"
-        artifact_path=$(cat $GITHUB_OUTPUT | grep artifact_path | cut -d'=' -f2)
-        echo "artifact_path=$artifact_path"
 
         python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
 
