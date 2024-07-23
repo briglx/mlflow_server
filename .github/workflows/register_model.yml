@@ -125,7 +125,6 @@ jobs:
 
         # Debug
         echo "Current path: $(pwd)"
-        artifact_path=./artifacts/iris_model
         ls -al "$artifact_path"
         echo ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"
 
