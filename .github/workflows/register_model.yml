@@ -66,7 +66,6 @@ jobs:
 
         model_name=${{ github.event.client_payload.model_name }}
         artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
-        echo "artifact_path=$artifact_path"
 
         python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
 
@@ -121,5 +120,10 @@ jobs:
         # Create image name and version
         image="${model_name}_v${model_version}"
 
+        # Debug
+        ls -al "$artifact_path"
+        echo ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"
+
+        # Build Docker image
         echo "Building Docker image"
         ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"

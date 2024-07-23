@@ -1,6 +1,13 @@
-# MLFlow Server
+# MLOps Example
 
-Example project to show how to run an MLFlow tracking server and artifact store.
+This project is an example of several different MLOps tools and techniques.
+
+* Primary MLFlow Registry - Provision and deploy an MLFlow server
+* Train a model using MLFlow to the primary registry
+* Trigger a GitHub Action workflow to register the model to a secondary MLFlow registry when a new model is registered to the primary registry
+* Build a Docker image to serve the model
+
+# Primary Registry - MLFlow Server
 
 ![Architecture Overview](./docs/architecture_overview.svg)
 
@@ -163,7 +170,20 @@ docker stop $(docker ps -q --filter ancestor="$image_name")
 
 ```
 
-# Tracking Server
+# Running
+
+## Server App
+The server app runs on an MLFlow server and is triggered when a new artifact is registered. The client triggers the GitHub CICD pipeline with the model artifact details.
+
+```bash
+# Optional - load .env vars
+[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
+
+# Run the server app code
+python ./server_app/main.py
+```
+
+## Tracking Server
 
 Login to the tracking server `http://<TRACKING_SERVER_IP>:5000`
 

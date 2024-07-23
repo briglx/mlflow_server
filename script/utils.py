@@ -19,4 +19,8 @@ def configure_logging(log_file="script.log"):
     )
     logger.addHandler(file_handler)
 
+    # Set azure.core.pipeline.policies.HttpLoggingPolicy logger to WARNING
+    azure_logger = logging.getLogger("azure.core.pipeline.policies.HttpLoggingPolicy")
+    azure_logger.setLevel(logging.WARNING)
+
     return logger
