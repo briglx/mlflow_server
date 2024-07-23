@@ -120,6 +120,9 @@ jobs:
         # Create image name and version
         image="${model_name}_v${model_version}"
 
+        # Get relative path to artifact
+        artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
+
         # Debug
         echo "Current path: $(pwd)"
         artifact_path=./artifacts/iris_model
