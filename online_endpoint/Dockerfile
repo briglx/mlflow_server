@@ -5,7 +5,6 @@ FROM continuumio/miniconda3:latest
 WORKDIR /app
 
 ARG ARTIFACT_PATH=/app
-ARG RELEASE_VERSION=0.0.1
 
 RUN echo 'alias ll='"'"'ls $LS_OPTIONS -al'"'"'' >> /etc/bash.bashrc
 
@@ -28,4 +27,6 @@ EXPOSE 5000
 COPY ./script/mlflow_serve.sh /app/entrypoint.sh
 
 #  Serve the model
+ARG RELEASE_VERSION=0.0.0
+ENV RELEASE_VERSION=${RELEASE_VERSION}
 CMD ["conda", "run", "--no-capture-output", "-n", "mlflow-env", "./entrypoint.sh"]

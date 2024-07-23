@@ -12,5 +12,7 @@
 # Stop on errors
 set -e
 
+echo "Serving model with release version: $RELEASE_VERSION"
+
 # Serve the model
 mlflow models serve --no-conda -m "file:///app" -h "0.0.0.0" -p "5000"

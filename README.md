@@ -138,9 +138,35 @@ codespell .
 shellcheck -x ./script/*.sh
 ```
 
+# Deployment
+
+The project uses GitHub Actions to deploy the application.
+
+## Build Docker Image
+```bash
+# Build image
+model_name="dev.mlflow-sample-model-test_script"
+model_version="4"
+image="${model_name}_v${model_version}"
+image_version="2024.7.1.dev20240723T1400"
+artifact_path="./artifacts/iris_model"
+
+./script/devops.sh build_image --name "$image" --version "$image_version" --artifact_path "$artifact_path"
+
+# Run container
+image_name="${image}:${image_version}"
+docker run -p 5000:5000 "$image_name"
+# Get container ID
+container_id=$(docker ps -q --filter ancestor="$image_name")
+
+docker stop $(docker ps -q --filter ancestor="$image_name")
+
+```
+
 # Tracking Server
 
 Login to the tracking server `http://<TRACKING_SERVER_IP>:5000`
+
 
 ```bash
 # SSH into the Tracking Server

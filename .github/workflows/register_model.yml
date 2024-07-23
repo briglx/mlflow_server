@@ -9,10 +9,11 @@ permissions:
   contents: read
 env:
   PYTHON_VERSION: "3.12"
+  PROJ_VERSION: "2024.7.1"
 
 jobs:
 
-  deploy:
+  register:
     runs-on: ubuntu-latest
 
     steps:
@@ -98,3 +99,27 @@ jobs:
     #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
     #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
     #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+
+    - name: 'Build Docker image'
+      run: |
+
+        proj_version="${{ env.PROJ_VERSION}}"
+        build_number=$(date +%Y%m%dT%H%M)
+        model_name=${{ github.event.client_payload.model_name }}
+        model_version=${{ github.event.client_payload.model_version }}
+        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+
+        # Get image version
+        if [[ $GITHUB_REF == refs/heads/releases/* ]]; then
+          channel="release"
+          version="${proj_version}"
+        else
+          channel="dev"
+          version="${proj_version}.dev${build_number}"
+        fi
+
+        # Create image name and version
+        image="${model_name}_v${model_version}"
+
+        echo "Building Docker image"
+        ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"
