@@ -118,3 +118,7 @@ mlruns/
 server_app/responses
 artifacts
 *.log
+
+# Artifactory
+artifactory/home
+artifactory/home_oss

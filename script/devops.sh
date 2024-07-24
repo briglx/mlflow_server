@@ -5,14 +5,15 @@
 # Globals:
 #
 # Commands
-#   validate    Validate deployment of common resources.
-#   provision   Provision common resources.
-#   build       Build the images.
-#   deploy      Prepare the app and deploy to cloud.
-#   delete      Delete the app from cloud.
+#   validate        Validate deployment of common resources.
+#   provision       Provision common resources.
+#   build_image     Build the images.
+#   publish_image   Publish the images to the registry.
+#   deploy          Prepare the app and deploy to cloud.
+#   delete          Delete the app from cloud.
 # Params
 #    -s, --subscription     Azure subscription id
-#    -n, --name             Registry name
+#    -n, --name             Image name
 #    -g, --resource-group   Resource group name
 #    -h, --help             Show this message and get help for a command.
 #    -l, --location         Resource location. Default westus3
@@ -27,15 +28,16 @@ show_help() {
     echo "Globals"
     echo
     echo "Commands"
-    echo "  validate    Validate deployment of common resources."
-    echo "  provision   Provision common resources."
-    echo "  build       Build the images."
-    echo "  delete      Delete the app from cloud."
-    echo "  deploy      Prepare the app and deploy to cloud."
+    echo "  validate        Validate deployment of common resources."
+    echo "  provision       Provision common resources."
+    echo "  build_image     Build the images."
+    echo "  publish_image   Publish the images to the registry."
+    echo "  delete          Delete the app from cloud."
+    echo "  deploy          Prepare the app and deploy to cloud."
     echo
     echo "Arguments"
     echo "   -s, --subscription     Azure subscription id"
-    echo "   -n, --name             Registry name"
+    echo "   -n, --name             Image name"
     echo "   -g, --resource-group   Resource group name"
     echo "   -l, --location         Resource location. Default westus3"
     echo "   -h, --help             Show this message and get help for a command."
@@ -63,7 +65,7 @@ validate_provision_parameters(){
     fi
 
     # Check registry name
-    if [ -z "$registry_name" ]
+    if [ -z "$registry" ]
     then
         echo "name is required" >&2
         show_help
@@ -111,9 +113,9 @@ validate_build_parameters(){
 replace_parameters(){
     # Replace parameters with environment variables
     additional_parameters=()
-    if [ -n "$registry_name" ]
+    if [ -n "$registry" ]
     then
-        additional_parameters+=("acrName=$registry_name")
+        additional_parameters+=("acrName=$registry")
     fi
     if [ -n "$resource_group" ]
     then
@@ -212,21 +214,12 @@ delete(){
 build_image(){
     local deployment_name="${name}.Build-${run_date}"
     echo "Building ${deployment_name}"
-    # local registry="${registry_name}.azurecr.io"
-    # local namespace="devcontainers"
-    # # local image_name="$1" #
-    # local tag="latest"
-    # local release=false
-    # local push=false
-    # local artifact_path="$1"
-    # local artifact_path="${PROJ_ROOT_PATH}/artifacts/"
     local dockerfile_path="${PROJ_ROOT_PATH}/online_endpoint/Dockerfile"
-    local image_name="${name}:${version}"
 
     docker build \
         --build-arg "ARTIFACT_PATH=$artifact_path" \
         --build-arg "RELEASE_VERSION=$version" \
-        -t "$image_name" \
+        -t "${name}:${version}" \
         -f "${dockerfile_path}" \
         "${PROJ_ROOT_PATH}"
 
@@ -235,23 +228,10 @@ build_image(){
 
 }
 
-push_registry() {
-    local repository=${1}
-    local image=${2}
-    local tag=${3}
-    local registry_login_server=${4}
-
-    docker tag "${repository}/${image}:${tag}" "${registry_login_server}/devcontainer/${image}:${tag}"
-    docker push "${registry_login_server}/devcontainer/${image}:${tag}"
-    # cosign sign --yes "${REGISTRY_LOGIN_SERVER}/devcontainer/${image}:${tag}"
-}
-
 publish_image(){
     local deployment_name="${name}.PublishImage-${run_date}"
-    local image="$name"
     local dev_tags=("${version}" "dev")
     local release_tags=("${version}" "latest")
-    local registry_login_server="${registry_name}.azurecr.io"
 
     echo "Publishing ${deployment_name} for version ${version} and channel ${channel}"
 
@@ -262,17 +242,15 @@ publish_image(){
         tags=("${release_tags[@]}")
     fi
 
-    # Tag images
+    # Tag images with extra tags
     for tag in "${tags[@]}"; do
-        docker tag "${repository}/${image}:${version}" "${repository}/${image}:${tag}"
+        docker tag "${name}:${version}" "${name}:${tag}"
     done
-
-    # Login to Azure Container Registry
-    az acr login --name "$registry_name"
 
     # Push Images
     for tag in "${tags[@]}"; do
-        push_registry "${repository}" "${image}" "${tag}" "${registry_login_server}"
+        docker tag "${name}:${tag}" "${registry}/${namespace}/${name}:${tag}"
+        docker push "${registry}/${namespace}/${name}:${tag}"
     done
 
 }
@@ -283,16 +261,16 @@ ENV_FILE="${PROJ_ROOT_PATH}/.env"
 echo "Project root: $PROJ_ROOT_PATH"
 
 # Argument/Options
-LONGOPTS=artifact_path:,subscription:,name:,resource-group:,repository:,location:,version:,channel:,registry:,help
-OPTIONS=a:s:n:g:p:l:v:c:r:h
+LONGOPTS=artifact_path:,subscription:,name:,resource-group:,location:,version:,channel:,registry:,namespace:,help
+OPTIONS=a:s:n:g:l:v:c:r:m:h
 
 # Variables
 artifact_path="./artifacts/"
 name="devcontainers"
 subscription=""
-registry_name=""
+registry=""
 resource_group=""
-repository=""
+namespace="aimodelserving"
 location="westus3"
 version="$(date +%Y.%m.0)"
 channel="dev"
@@ -333,12 +311,12 @@ while true; do
             channel="$2"
             shift 2
             ;;
-        -p|--repository)
-            repository="$2"
+        -r|--registry)
+            registry="$2"
             shift 2
             ;;
-        -r|--registry)
-            registry_name="$2"
+        -m|--namespace)
+            namespace="$2"
             shift 2
             ;;
         -a|--artifact_path)

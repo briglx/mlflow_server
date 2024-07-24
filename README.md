@@ -54,10 +54,10 @@ If you use the devcontainer image you need to log into the Container registry
 # load .env vars (optional)
 [ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
 
-az login --use-device-code --tenant "$AZURE_TENANT_ID"
-az acr login --name $REGISTRY_LOGIN_SERVER --username $TOKEN_NAME --password $TOKEN_PWD
-docker login -u $TOKEN_NAME -p $TOKEN_PWD  $REGISTRY_LOGIN_SERVER
-echo $TOKEN_PWD | docker login --username $TOKEN_NAME --password-stdin $REGISTRY_LOGIN_SERVER
+az login --use-device-code --tenant "$CONTAINER_AZURE_TENANT_ID"
+az acr login --name $CONTAINER_REGISTRY_LOGIN_SERVER --username $CONTAINER_TOKEN_NAME --password $CONTAINER_TOKEN_PWD
+docker login -u $CONTAINER_TOKEN_NAME -p $CONTAINER_TOKEN_PWD  $CONTAINER_REGISTRY_LOGIN_SERVER
+echo $CONTAINER_TOKEN_PWD | docker login --username $CONTAINER_TOKEN_NAME --password-stdin $CONTAINER_REGISTRY_LOGIN_SERVER
 ```
 
 If you want to develop outside of a docker devcontainer you can use the following commands to setup your environment.
@@ -167,6 +167,42 @@ docker run -p 5000:5000 "$image_name"
 container_id=$(docker ps -q --filter ancestor="$image_name")
 
 docker stop $(docker ps -q --filter ancestor="$image_name")
+
+```
+
+## Deploy Docker Image to Registry
+
+Deploy to Azure Container Registry
+```bash
+# load .env vars (optional)
+[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
+
+# Login to remote registry
+docker login -u mlops-token -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
+
+image="dev.mlflow-sample-model-test_script_v4"
+image_version="2024.7.1.dev20240723T1400"
+channel="dev"
+namespace="aimodelserving"
+
+./script/devops.sh publish_image --name "$image" --version "$image_version" --channel "$channel" --registry "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io" --namespace "$namespace"
+
+```
+
+Deploy to Artifactory Container Registry
+```bash
+# load .env vars (optional)
+[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
+
+# Login to remote registry
+docker login -u "$ARTIFACTORY_USERNAME" -p "$ARTIFACTORY_PASSWORD"  "$ARTIFACTORY_VM_IP"
+
+image="dev.mlflow-sample-model-test_script_v4"
+image_version="2024.7.1.dev20240723T1400"
+channel="dev"
+namespace="aimodelserving"
+
+./script/devops.sh publish_image --name "$image" --version "$image_version" --channel "$channel" --registry "$ARTIFACTORY_VM_IP" --namespace "$namespace"
 
 ```
 

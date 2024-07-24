@@ -10,6 +10,7 @@ permissions:
 env:
   PYTHON_VERSION: "3.12"
   PROJ_VERSION: "2024.7.1"
+  NAMESPACE: "aimodelserving"
 
 jobs:
 
@@ -98,17 +99,11 @@ jobs:
     #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
     #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
     #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
-
-    - name: 'Build Docker image'
+    - name: Get build version
       run: |
-
         proj_version="${{ env.PROJ_VERSION}}"
         build_number=$(date +%Y%m%dT%H%M)
-        model_name=${{ github.event.client_payload.model_name }}
-        model_version=${{ github.event.client_payload.model_version }}
-        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
-        # Get image version
         if [[ $GITHUB_REF == refs/heads/releases/* ]]; then
           channel="release"
           version="${proj_version}"
@@ -117,17 +112,55 @@ jobs:
           version="${proj_version}.dev${build_number}"
         fi
 
+        echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
+        echo "RELEASE_CHANNEL=${channel}" >> $GITHUB_ENV
+    - name: 'Build Docker image'
+      run: |
+
+        model_name=${{ github.event.client_payload.model_name }}
+        model_version=${{ github.event.client_payload.model_version }}
+        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+
         # Create image name and version
         image="${model_name}_v${model_version}"
 
         # Get relative path to artifact
         artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
 
-        # Debug
-        echo "Current path: $(pwd)"
-        ls -al "$artifact_path"
-        echo ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"
-
         # Build Docker image
         echo "Building Docker image"
-        ./script/devops.sh build_image --name "$image" --version "$version" --artifact_path "$artifact_path"
+        ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "$artifact_path"
+
+    - name: Login to ACR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+    - name: Publish images to Azure Container Registry
+      run: |
+        model_name="${{ github.event.client_payload.model_name }}"
+        model_version="${{ github.event.client_payload.model_version }}"
+
+        # Create image name and version
+        image="${model_name}_v${model_version}"
+
+        ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
+        docker images
+
+    - name: Login to JFrog 🐸
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}
+        username: ${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}
+        password: ${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}
+    - name: Publish images to Artifactory
+      run: |
+        model_name="${{ github.event.client_payload.model_name }}"
+        model_version="${{ github.event.client_payload.model_version }}"
+
+        # Create image name and version
+        image="${model_name}_v${model_version}"
+
+        ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" --namespace "${{ env.NAMESPACE}}"
+        docker images
