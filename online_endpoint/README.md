@@ -46,6 +46,13 @@ curl --header "Content-Type: application/json" --request GET http://localhost:50
 curl --header "Content-Type: application/json" --request POST --data @"${artifact_path}/input_example.json" http://localhost:5000/invocations
 ```
 
+# Deploy Model to AML Online Endpoint
+
+```python
+
+
+```
+
 # References
 * Example Notebook https://github.com/Azure/azureml-examples/blob/main/sdk/python/endpoints/online/custom-container/online-endpoints-custom-container.ipynb
 * https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli
