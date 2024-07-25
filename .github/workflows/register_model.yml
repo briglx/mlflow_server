@@ -173,13 +173,23 @@ jobs:
         image="${model_name}_v${model_version}"
         log_file="docker_login_error.log"
 
-        echo "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" 2>> "$log_file"
-        if [ $? -ne 0 ]; then
-          echo "DEBUG - Docker login failed.
-          cat "$log_file"
+
+        output=$(docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" -p "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" 2>&1)
+        status=$?
+        if [ $status -ne 0 ]; then
+          echo "DEBUG - Docker login failed."
+          echo "$output"
         else
           echo "DEBUG - Docker login successful."
         fi
+
+        # echo "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" 2>> "$log_file"
+        # if [ $? -ne 0 ]; then
+        #   echo "DEBUG - Docker login failed.
+        #   cat "$log_file"
+        # else
+        #   echo "DEBUG - Docker login successful."
+        # fi
 
         echo "DEBUG - Docker login attempt completed"
         echo "DEBUG - cat $log_file"
