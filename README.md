@@ -178,7 +178,7 @@ Deploy to Azure Container Registry
 [ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
 
 # Login to remote registry
-docker login -u mlops-token -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
+docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
 
 image="dev.mlflow-sample-model-test_script_v4"
 image_version="2024.7.1.dev20240723T1400"

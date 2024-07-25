@@ -21,7 +21,7 @@ az login --use-device-code --tenant "$AZURE_TENANT_ID"
 # Login to remote registry
 az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
 az acr login --name "$AZURE_CONTAINER_REGISTRY_NAME"
-docker login -u mlops-token -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
+docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
 
 registry_host="${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
 namespace="aimodelserving"
