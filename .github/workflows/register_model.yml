@@ -149,6 +149,20 @@ jobs:
         ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
         docker images
 
+    - name: Configure insecure-registries
+      run: |
+        # Create daemon.json file with insecure registries
+        echo '{
+          "insecure-registries": ["${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"]
+        }' | sudo tee /etc/docker/daemon.json
+
+        # Restart Docker daemon to apply changes
+        sudo systemctl restart docker
+
+    - name: Verify Docker configuration
+      run: |
+        docker info
+
     - name: Login to JFrog 🐸
       uses: docker/login-action@v3
       with:
