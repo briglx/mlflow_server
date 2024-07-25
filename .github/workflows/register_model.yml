@@ -168,17 +168,24 @@ jobs:
         model_name="${{ github.event.client_payload.model_name }}"
         model_version="${{ github.event.client_payload.model_version }}"
 
+        echo "DEBUG - starging docker login"
         # Create image name and version
         image="${model_name}_v${model_version}"
         log_file="docker_login_error.log"
 
         echo "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" 2>> "$log_file"
-
         if [ $? -ne 0 ]; then
-          echo "Docker login failed.
+          echo "DEBUG - Docker login failed.
           cat "$log_file"
         else
-          echo "Docker login successful."
+          echo "DEBUG - Docker login successful."
         fi
+
+        echo "DEBUG - Docker login attempt completed"
+        echo "DEBUG - cat $log_file"
+        cat "$log_file"
+
+        echo "DEBUG - Attempting to publish image to Artifactory"
         ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" --namespace "${{ env.NAMESPACE}}"
+        echo "DEBUG - Completed publishing image to Artifactory"
         docker images
