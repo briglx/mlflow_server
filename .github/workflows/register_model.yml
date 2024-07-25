@@ -171,7 +171,7 @@ jobs:
         # Create image name and version
         image="${model_name}_v${model_version}"
 
-        docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}"" -p "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"
+        docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" -p "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"
 
         ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" --namespace "${{ env.NAMESPACE}}"
         docker images
