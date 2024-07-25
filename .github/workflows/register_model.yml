@@ -166,7 +166,7 @@ jobs:
     - name: Login to JFrog 🐸
       uses: docker/login-action@v3
       with:
-        registry: ${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}
+        registry: "http://20.169.48.143"
         username: ${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}
         password: ${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}
     - name: Publish images to Artifactory
