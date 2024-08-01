@@ -60,7 +60,10 @@ jobs:
           model_name=${{ github.event.client_payload.model_name }}
           artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
-          modelscan -p "$artifact_path"
+          echo "Scanning model for vulnerabilities"
+          ls -al "$artifact_path"
+
+          modelscan --show-skipped -p "$artifact_path"
 
       - name: "OIDC Login to Azure"
         uses: azure/login@v2
