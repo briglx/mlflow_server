@@ -13,170 +13,180 @@ env:
   NAMESPACE: "aimodelserving"
 
 jobs:
-
   register:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4.1.1
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
 
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      id: python
-      uses: actions/setup-python@v5.1.0
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        check-latest: true
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        id: python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: true
 
-    - name: Create Python virtual environment
-      run: |
-        python -m venv venv
-        . venv/bin/activate
-        python --version
-        pip install -r requirements.txt
+      - name: Create Python virtual environment
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          python --version
+          pip install -r requirements.txt
 
-    - name: Download artifacts
-      id: download_artifacts
-      run: |
-        python --version
+      - name: Download artifacts
+        id: download_artifacts
+        run: |
+          python --version
 
-        # activate virtual environment
-        . venv/bin/activate
+          # activate virtual environment
+          . venv/bin/activate
 
-        model_name=${{ github.event.client_payload.model_name }}
-        version=${{ github.event.client_payload.model_version }}
+          model_name=${{ github.event.client_payload.model_name }}
+          version=${{ github.event.client_payload.model_version }}
 
-        artifact_path=$(python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version")
-        echo "artifact_path=$artifact_path" >> $GITHUB_OUTPUT
+          artifact_path=$(python ./script/get_model_artifacts.py --model_name "$model_name" --model_version "$version")
+          echo "artifact_path=$artifact_path" >> $GITHUB_OUTPUT
 
-      env:
-        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-        MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-        MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+          MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
 
-    - name: 'OIDC Login to Azure'
-      uses: azure/login@v2
-      with:
+      - name: "Scan model for vulnerabilities"
+        run: |
+          . venv/bin/activate
+
+          model_name=${{ github.event.client_payload.model_name }}
+          artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+
+          modelscan -p "$artifact_path" -o ./scan_results
+
+          cat ./scan_results/scan_results.json
+
+      - name: "OIDC Login to Azure"
+        uses: azure/login@v2
+        with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Register Model
-      run: |
-        . venv/bin/activate
+      - name: Register Model
+        run: |
+          . venv/bin/activate
 
-        model_name=${{ github.event.client_payload.model_name }}
-        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+          model_name=${{ github.event.client_payload.model_name }}
+          artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
-        python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
+          python ./script/register_model.py --model_name "$model_name" --artifact_path "$artifact_path"
 
-      env:
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        AZURE_ML_RESOURCE_GROUP: ${{ secrets.AZURE_ML_RESOURCE_GROUP }}
-        AZURE_ML_WORKSPACE: ${{ secrets.AZURE_ML_WORKSPACE }}
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ML_RESOURCE_GROUP: ${{ secrets.AZURE_ML_RESOURCE_GROUP }}
+          AZURE_ML_WORKSPACE: ${{ secrets.AZURE_ML_WORKSPACE }}
 
-    # - name: Get Model Artifact Url
-    #   run: |
+      # - name: Get Model Artifact Url
+      #   run: |
 
-    #     model_name=${{ github.event.client_payload.model_name }}
-    #     model_version=${{ github.event.client_payload.model_version }}
+      #     model_name=${{ github.event.client_payload.model_name }}
+      #     model_version=${{ github.event.client_payload.model_version }}
 
-    #     # Get Artifact Url
-    #     if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
-    #       echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-    #       curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-    #       artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
-    #     else
-    #       echo Username and Password not provided
-    #       echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-    #       curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-    #       artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
-    #     fi
+      #     # Get Artifact Url
+      #     if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
+      #       echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+      #       curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+      #       artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
+      #     else
+      #       echo Username and Password not provided
+      #       echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+      #       curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
+      #       artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
+      #     fi
 
-    #     echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
+      #     echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
 
-    # env:
-    #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-    #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-    #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
-    - name: Get build version
-      run: |
-        proj_version="${{ env.PROJ_VERSION}}"
-        build_number=$(date +%Y%m%dT%H%M)
+      # env:
+      #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
+      #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+      - name: Get build version
+        run: |
+          proj_version="${{ env.PROJ_VERSION}}"
+          build_number=$(date +%Y%m%dT%H%M)
 
-        if [[ $GITHUB_REF == refs/heads/releases/* ]]; then
-          channel="release"
-          version="${proj_version}"
-        else
-          channel="dev"
-          version="${proj_version}.dev${build_number}"
-        fi
+          if [[ $GITHUB_REF == refs/heads/releases/* ]]; then
+            channel="release"
+            version="${proj_version}"
+          else
+            channel="dev"
+            version="${proj_version}.dev${build_number}"
+          fi
 
-        echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
-        echo "RELEASE_CHANNEL=${channel}" >> $GITHUB_ENV
-    - name: 'Build Docker image'
-      run: |
+          echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
+          echo "RELEASE_CHANNEL=${channel}" >> $GITHUB_ENV
+      - name: "Build Docker image"
+        run: |
 
-        model_name=${{ github.event.client_payload.model_name }}
-        model_version=${{ github.event.client_payload.model_version }}
-        artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
+          model_name=${{ github.event.client_payload.model_name }}
+          model_version=${{ github.event.client_payload.model_version }}
+          artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
-        # Create image name and version
-        image="${model_name}_v${model_version}"
+          # Create image name and version
+          image="${model_name}_v${model_version}"
 
-        # Get relative path to artifact
-        artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
+          # Get relative path to artifact
+          artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
 
-        # Build Docker image
-        echo "Building Docker image"
-        ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "$artifact_path"
+          # Build Docker image
+          echo "Building Docker image"
+          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "$artifact_path"
 
-    - name: Login to Azure Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io
-        username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-        password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
-    - name: Publish images to Azure Container Registry
-      run: |
-        model_name="${{ github.event.client_payload.model_name }}"
-        model_version="${{ github.event.client_payload.model_version }}"
+      - name: Publish images to Azure Container Registry
+        run: |
+          model_name="${{ github.event.client_payload.model_name }}"
+          model_version="${{ github.event.client_payload.model_version }}"
 
-        # Create image name and version
-        image="${model_name}_v${model_version}"
+          # Create image name and version
+          image="${model_name}_v${model_version}"
 
-        ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
-        docker images
+          ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
+          docker images
 
-    - name: Configure insecure-registries
-      run: |
-        # Create daemon.json file with insecure registries
-        echo '{
-          "insecure-registries": ["${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"]
-        }' | sudo tee /etc/docker/daemon.json
+      - name: Configure insecure-registries
+        run: |
+          # Create daemon.json file with insecure registries
+          echo '{
+            "insecure-registries": ["${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"]
+          }' | sudo tee /etc/docker/daemon.json
 
-        # Restart Docker daemon to apply changes
-        sudo systemctl restart docker
+          # Restart Docker daemon to apply changes
+          sudo systemctl restart docker
 
-    - name: Verify Docker configuration
-      run: |
-        docker info
+      - name: Verify Docker configuration
+        run: |
+          docker info
 
-    - name: Publish images to Artifactory
-      run: |
-        model_name="${{ github.event.client_payload.model_name }}"
-        model_version="${{ github.event.client_payload.model_version }}"
+      - name: Publish images to Artifactory
+        run: |
+          model_name="${{ github.event.client_payload.model_name }}"
+          model_version="${{ github.event.client_payload.model_version }}"
 
-        echo "DEBUG - starging docker login"
-        # Create image name and version
-        image="${model_name}_v${model_version}"
+          echo "DEBUG - starging docker login"
+          # Create image name and version
+          image="${model_name}_v${model_version}"
 
-        echo "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"
+          echo "${{ secrets.JFROG_CONTAINER_REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.JFROG_CONTAINER_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}"
 
-        echo "DEBUG - Docker login attempt completed"
+          echo "DEBUG - Docker login attempt completed"
 
-        echo "DEBUG - Attempting to publish image to Artifactory"
-        ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" --namespace "${{ env.NAMESPACE}}"
-        echo "DEBUG - Completed publishing image to Artifactory"
-        docker images
+          echo "DEBUG - Attempting to publish image to Artifactory"
+          ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.JFROG_CONTAINER_REGISTRY_HOST }}" --namespace "${{ env.NAMESPACE}}"
+          echo "DEBUG - Completed publishing image to Artifactory"
+          docker images
