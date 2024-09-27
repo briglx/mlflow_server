@@ -2,13 +2,14 @@
 
 There are various way to serve up models using a docker image.
 
-| Method | Servables | Protocols | Docker File | Example |
-| --- | --- | --- | --- | --- |
-| [TensorFlow Serving](https://github.com/tensorflow/serving) | Tensorflow models, embeddings, vocabularies, feature transformations and even non-Tensorflow-based machine learning models| gRPC as well as HTTP inference endpoints| [Dockerfile](https://hub.docker.com/r/tensorflow/serving/) | [Example](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md) |
-| [ONNX Runtime](https://example.com) | tbd | tbd | tbd | tbd |
-| [Ollama](https://ollama.com/) | tbd | tbd | tbd | tbd |
-| [Azure ML](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli) | tbd | tbd | tbd | tbd |
-
+| Method                                                                                                                          | Servables                                                                                                                  | Protocols                                | Docker File                                                | Example                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [TensorFlow Serving](https://github.com/tensorflow/serving)                                                                     | Tensorflow models, embeddings, vocabularies, feature transformations and even non-Tensorflow-based machine learning models | gRPC as well as HTTP inference endpoints | [Dockerfile](https://hub.docker.com/r/tensorflow/serving/) | [Example](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md) |
+| [mlflow models serve](https://mlflow.org/docs/latest/models.html)                                                               | MLflow Artifacts                                                                                                           | REST API & TBD                           | tbd                                                        | tbd                                                                                             |
+| [ONNX Runtime](https://example.com)                                                                                             | tbd                                                                                                                        | tbd                                      | tbd                                                        | tbd                                                                                             |
+| [Ollama](https://ollama.com/)                                                                                                   | tbd                                                                                                                        | tbd                                      | tbd                                                        | tbd                                                                                             |
+| [vLLM](https://github.com/vllm-project/vllm)                                                                                    | tbd                                                                                                                        | tbd                                      | tbd                                                        | tbd                                                                                             |
+| [Azure ML](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli) | tbd                                                                                                                        | tbd                                      | tbd                                                        | tbd                                                                                             |
 
 # Build Docker Image
 
@@ -54,5 +55,6 @@ curl --header "Content-Type: application/json" --request POST --data @"${artifac
 ```
 
 # References
-* Example Notebook https://github.com/Azure/azureml-examples/blob/main/sdk/python/endpoints/online/custom-container/online-endpoints-custom-container.ipynb
-* https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli
+
+- Example Notebook https://github.com/Azure/azureml-examples/blob/main/sdk/python/endpoints/online/custom-container/online-endpoints-custom-container.ipynb
+- https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli

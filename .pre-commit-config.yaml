@@ -10,6 +10,7 @@ repos:
         args:
           - '--skip="./.*,*.csv,*.json,*.pyc,./docs/_build/*,./htmlcov/*"'
           - "--quiet-level=2"
+          - "--ignore-words=./.codespell-ignore-words.txt"
         exclude_types:
           - csv
           - json
