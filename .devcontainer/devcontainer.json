@@ -1,6 +1,8 @@
 {
   "image": "lamoreauxlab.azurecr.io/devcontainer/python:latest",
-  "features": {},
+  "features": {
+    "docker-in-docker": "latest"
+  },
   "customizations": {
     "vscode": {
       "extensions": [

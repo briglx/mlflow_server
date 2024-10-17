@@ -1,0 +1,88 @@
+name: Admin Tasks
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: "Name of the image to register"
+        required: true
+        default: "minimal"
+      model_name:
+        description: "Name of the model to register"
+        required: true
+        default: "iris_model"
+      model_version:
+        description: "Version of the model to register"
+        required: true
+        default: "1"
+
+permissions:
+  id-token: write
+  contents: read
+env:
+  PYTHON_VERSION: "3.12"
+  PROJ_VERSION: "2024.7.1"
+  NAMESPACE: "aimodelserving"
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+
+      - name: "OIDC Login to Azure"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get build version
+        run: |
+          proj_version="${{ env.PROJ_VERSION}}"
+          build_number=$(date +%Y%m%dT%H%M)
+
+          if [[ $GITHUB_REF == refs/heads/releases/* ]]; then
+            channel="release"
+            version="${proj_version}"
+          else
+            channel="dev"
+            version="${proj_version}.dev${build_number}"
+          fi
+
+          echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
+          echo "RELEASE_CHANNEL=${channel}" >> $GITHUB_ENV
+      - name: "Build Docker image"
+        run: |
+          model_name="${{ github.event.inputs.model_name }}"
+          model_version="${{ github.event.inputs.model_version }}"
+
+          # Create image name and version
+          image="${model_name}_v${model_version}"
+          version="${{ env.RELEASE_VERSION }}"
+
+          dockerfile_path="${{ github.workspace }}/online_endpiont/${{ github.event.inputs.image_name}}/Dockerfile"
+
+          # Build Docker image
+          echo "Building Docker image"
+          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "."
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+
+      - name: Publish images to Azure Container Registry
+        run: |
+          model_name="${{ github.event.inputs.model_name }}"
+          model_version="${{ github.event.inputs.model_version }}"
+
+          # Create image name and version
+          image="${model_name}_v${model_version}"
+
+          ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
+          docker images

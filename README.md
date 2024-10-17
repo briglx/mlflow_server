@@ -1,15 +1,24 @@
 # MLOps Example
 
-This project is an example of several different MLOps tools and techniques.
+Example project implementation of MLOps using Databricks, MLFlow, GitHub Actions, and Azure Machine Learning.
 
-* Primary MLFlow Registry - Provision and deploy an MLFlow server
-* Train a model using MLFlow to the primary registry
-* Trigger a GitHub Action workflow to register the model to a secondary MLFlow registry when a new model is registered to the primary registry
-* Build a Docker image to serve the model
+This projects deviates from the standard MLOps process by
 
-# Primary Registry - MLFlow Server
+- tracking the model artifacts between Databricks and Azure Machine Learning MLFlow artifact registry
+- using a custom Docker image to serve the models.
 
 ![Architecture Overview](./docs/architecture_overview.svg)
+
+1. Data Estate - Training data and Endpoint monitoring data
+2. Infrastructure and Admin - Provision and manage the infrastructure
+3. Model Development - Develop and train models
+4. CICD Triggers - Build Model in QA, Register Models, Gated Deployment to Staging and Prod
+5. Model Endpoints - Serve models in staging and prod
+6. Stage - Smoke test
+7. Production Endpoints
+8. Monitoring - Monitor model performance
+9. Retrain - Detect data drift to trigger retraining
+10. Infrastructure Performance - Detect infrastructure performance issues to trigger remediation
 
 ```bash
 # Setup virtual environment and install dependencies
@@ -150,6 +159,7 @@ shellcheck -x ./script/*.sh
 The project uses GitHub Actions to deploy the application.
 
 ## Build Docker Image
+
 ```bash
 # Build image
 model_name="dev.mlflow-sample-model-test_script"
@@ -173,6 +183,7 @@ docker stop $(docker ps -q --filter ancestor="$image_name")
 ## Deploy Docker Image to Registry
 
 Deploy to Azure Container Registry
+
 ```bash
 # load .env vars (optional)
 [ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
@@ -190,6 +201,7 @@ namespace="aimodelserving"
 ```
 
 Deploy to Artifactory Container Registry
+
 ```bash
 # load .env vars (optional)
 [ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
@@ -208,11 +220,10 @@ namespace="aimodelserving"
 
 # Deploy a Model to AML
 
-
-
 # Running
 
 ## Server App
+
 The server app runs on an MLFlow server and is triggered when a new artifact is registered. The client triggers the GitHub CICD pipeline with the model artifact details.
 
 ```bash
@@ -227,8 +238,26 @@ python ./server_app/main.py
 
 Login to the tracking server `http://<TRACKING_SERVER_IP>:5000`
 
-
 ```bash
 # SSH into the Tracking Server
 ssh -i ~/.ssh/id_rsa azureuser@$TRACKING_SERVER_IP
+```
+
+## Model Serving Custom Docker Image
+
+The custom docker images serves the models.
+
+```bash
+# Run container
+docker run -p 5000:5000 "$image_name"
+
+# Interactive shell
+docker run -it --entrypoint /bin/bash -p 5000:5000  "$image_name"
+$ conda activate mlflow-env
+$ mlflow models serve -m "file:///app" -h "0.0.0.0" -p 5000 --no-conda
+
+# Check liveness
+curl --header "Content-Type: application/json" --request GET http://localhost:5000/version
+# Check prediction
+curl --header "Content-Type: application/json" --request POST --data @"${artifact_path}/input_example.json" http://localhost:5000/invocations
 ```
