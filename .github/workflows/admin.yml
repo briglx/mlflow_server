@@ -63,11 +63,11 @@ jobs:
           image="${model_name}_v${model_version}"
           version="${{ env.RELEASE_VERSION }}"
 
-          dockerfile_path="${{ github.workspace }}/online_endpiont/${{ github.event.inputs.image_name}}/Dockerfile"
+          dockerfile_path="${{ github.workspace }}/online_endpoint/${{ github.event.inputs.image_name}}/Dockerfile"
 
           # Build Docker image
           echo "Building Docker image"
-          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "."
+          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "." --dockerfile_path "$dockerfile_path"
 
       - name: Login to Azure Container Registry
         uses: docker/login-action@v3

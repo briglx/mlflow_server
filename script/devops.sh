@@ -214,7 +214,6 @@ delete(){
 build_image(){
     local deployment_name="${name}.Build-${run_date}"
     echo "Building ${deployment_name}"
-    local dockerfile_path="${PROJ_ROOT_PATH}/online_endpoint/Dockerfile"
 
     docker build \
         --build-arg "ARTIFACT_PATH=$artifact_path" \
@@ -261,11 +260,12 @@ ENV_FILE="${PROJ_ROOT_PATH}/.env"
 echo "Project root: $PROJ_ROOT_PATH"
 
 # Argument/Options
-LONGOPTS=artifact_path:,subscription:,name:,resource-group:,location:,version:,channel:,registry:,namespace:,help
-OPTIONS=a:s:n:g:l:v:c:r:m:h
+LONGOPTS=artifact_path:,dockerfile_path:,subscription:,name:,resource-group:,location:,version:,channel:,registry:,namespace:,help
+OPTIONS=a:d:s:n:g:l:v:c:r:m:h
 
 # Variables
 artifact_path="./artifacts/"
+dockerfile_path="./Dockerfile"
 name="devcontainers"
 subscription=""
 registry=""
@@ -321,6 +321,10 @@ while true; do
             ;;
         -a|--artifact_path)
             artifact_path="$2"
+            shift 2
+            ;;
+        -d|--dockerfile_path)
+            dockerfile_path="$2"
             shift 2
             ;;
         --)
