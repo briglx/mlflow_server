@@ -22,6 +22,7 @@ def generate_jwt():
     pem_relative_path = os.environ.get("PRIVATE_KEY_PATH")
 
     project_dir = os.path.dirname(os.path.abspath(__file__))
+
     # Construct the absolute path to the private key file
     pem_path = os.path.join(project_dir, pem_relative_path)
 

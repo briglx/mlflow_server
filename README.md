@@ -71,7 +71,7 @@ Follow the instructions in each folder to provision resources.
 
 ## Example Workflow
 
-- Train a model and register the model in MLFlow
+- [Train a model and register the model in MLFlow](./workflow/01_train_model.ipynb)
 - Trigger the GitHub Actions workflow to Register the Model in AML model registry
 - Trigger the GitHub Action workflow to build and deploy the model serving image
 - Test the endpoint with a sample input
