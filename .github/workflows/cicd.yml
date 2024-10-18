@@ -1,68 +1,75 @@
 name: CI
+run-name: "${{ github.event_name == 'workflow_dispatch' && format('CI: {0}', github.ref_name) || '' }}"
 
 on:
-  workflow_dispatch:
-    inputs:
-      artifact_name:
-        description: "Name of the artifact to deploy"
-        required: true
-        default: "my-app-1.0.0.jar"
+  push:
+    branches: ~
+  pull_request: ~
+
+env:
+  PYTHON_VERSION: "3.12"
 
 jobs:
-  provision:
+  linting:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        id: python
+        uses: actions/setup-python@v5.1.0
         with:
-          terraform_version: 1.4.0 # Specify the Terraform version you need
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: true
 
-      - name: Azure login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Initialize Terraform
-        run: terraform init
-
-      - name: Apply Terraform
-        working-directory: ./iac/terraform # Change this to the path of your Terraform configuration
-        run: terraform apply -auto-approve
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download JAR from Artifactory
-        env:
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-          REPO_PATH: ${{ secrets.REPO_PATH }}
-          ARTIFACT_NAME: ${{ secrets.ARTIFACT_NAME }}
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      - name: Create Python virtual environment
         run: |
+          python -m venv venv
+          . venv/bin/activate
+          python --version
+          pip install -r requirements.txt
 
-          ./scripts/deploy.sh $ARTIFACTORY_URL $REPO_PATH $ARTIFACT_NAME $ARTIFACTORY_USERNAME $ARTIFACTORY_PASSWORD
-
-          # curl -u $ARTIFACTORY_USERNAME:$ARTIFACTORY_PASSWORD \
-          #   -O $ARTIFACTORY_URL/$REPO_PATH/$ARTIFACT_NAME
-
-      - name: Deploy JAR to Tomcat server
-        env:
-          TOMCAT_SERVER: ${{ secrets.TOMCAT_SERVER }}
-          TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
-          TOMCAT_PASSWORD: ${{ secrets.TOMCAT_PASSWORD }}
-          ARTIFACT_NAME: ${{ secrets.ARTIFACT_NAME }}
+      - name: Install pre-commit dependencies
         run: |
-          scp -o StrictHostKeyChecking=no $ARTIFACT_NAME $TOMCAT_USER@$TOMCAT_SERVER:/path/to/tomcat/webapps/
-          ssh -o StrictHostKeyChecking=no $TOMCAT_USER@$TOMCAT_SERVER "sh /path/to/tomcat/bin/shutdown.sh && sh /path/to/tomcat/bin/startup.sh"
+          . venv/bin/activate
+          pre-commit install-hooks
+
+      - name: Run codespell
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files codespell
+
+      - name: Run check_shellcheck
+        run: |
+          . venv/bin/activate
+          pre-commit run --hook-stage manual check_shellcheck --all-files --show-diff-on-failure
+
+      - name: Run mixed-line-ending
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files mixed-line-ending
+
+      - name: Python Lint
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files isort
+          pre-commit run --hook-stage manual black --all-files --show-diff-on-failure
+          pre-commit run --all-files flake8
+          pre-commit run --all-files pylint
+          pre-commit run --all-files bandit
+
+      - name: Run rstcheck
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files rstcheck
+
+      - name: Run check-yaml
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files check-yaml
+
+      - name: Run check-toml
+        run: |
+          . venv/bin/activate
+          pre-commit run --all-files check-toml

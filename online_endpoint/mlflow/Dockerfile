@@ -12,7 +12,7 @@ RUN echo 'alias ll='"'"'ls $LS_OPTIONS -al'"'"'' >> /etc/bash.bashrc
 COPY ${ARTIFACT_PATH} /app
 
 # Install dependencies
-RUN conda env create -n userenv -f conda.yaml
+RUN conda env create -f conda.yaml
 
 # Activate the environment
 SHELL ["conda", "run", "-n", "mlflow-env", "/bin/bash", "-c"]
