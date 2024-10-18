@@ -40,9 +40,7 @@ version="${proj_version}.dev${build_number}"
 
 image_name="${image}:${version}"
 
-# ./script/devops.sh build_image --name "$image_name" --version "$version"
-
-project_root="/home/brlamore/src/mlflow_server"
+project_root=$(git rev-parse --show-toplevel)
 dockerfile_path="${project_root}/online_endpoint/Dockerfile"
 artifact_path="./artifacts/iris_model"
 
@@ -115,7 +113,28 @@ docker build --build-arg "ARTIFACT_PATH=$artifact_path" -t "$image_name" -f "${d
 # Run container
 docker run "$image_name"
 docker run -it --entrypoint /bin/bash  "$image_name"
-# Fails to load ... no script
+
+# Stop
+container_id=$(docker ps -q --filter ancestor="$image_name")
+docker stop $(docker ps -q --filter ancestor="$image_name")
+```
+
+# Deploy Image to Azure Container Registry
+
+```bash
+# load .env vars (optional)
+[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
+
+# Login to remote registry
+docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
+
+image="dev.mlflow-sample-model-test_script_v4"
+image_version="2024.7.1.dev20240723T1400"
+channel="dev"
+namespace="aimodelserving"
+
+./script/devops.sh publish_image --name "$image" --version "$image_version" --channel "$channel" --registry "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io" --namespace "$namespace"
+
 ```
 
 # Deploy Model to AML Online Endpoint

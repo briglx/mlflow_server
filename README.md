@@ -7,6 +7,8 @@ This projects deviates from the standard MLOps process by
 - tracking the model artifacts between Databricks and Azure Machine Learning MLFlow artifact registry
 - using a custom Docker image to serve the models.
 
+## Architecture Diagram
+
 ![Architecture Overview](./docs/architecture_overview.svg)
 
 1. Data Estate - Training data and Endpoint monitoring data
@@ -20,34 +22,59 @@ This projects deviates from the standard MLOps process by
 9. Retrain - Detect data drift to trigger retraining
 10. Infrastructure Performance - Detect infrastructure performance issues to trigger remediation
 
+# Getting Started
+
+Configure the environment variables. Copy `example.env` to `.env` and update the values
+
+## Create System Identities
+
+The solution use system identities to deploy cloud resources. The following table lists the system identities and their purpose.
+
+| System Identities      | Authentication                                             | Authorization                                                                                                                                                                  | Purpose                                                                                                          |
+| ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `env.CICD_CLIENT_NAME` | OpenId Connect (OIDC) based Federated Identity Credentials | Subscription Contributor access<br>Microsoft Graph API admin consent Permissions: <ul><li>Directory.ReadWrite.All</li><li>User.Invite.All</li><li>User.ReadWrite.All</li></ul> | Deploy cloud resources: <ul><li>connectivity resources</li><li>Common resources</li></ul><br>Build Docker Images |
+
 ```bash
-# Setup virtual environment and install dependencies
-./script/setup.sh
+# Configure the environment variables. Copy `example.env` to `.env` and update the values
+cp example.env .env
+# load .env vars
+[ ! -f .env ] || export $(grep -v '^#' .env | xargs)
+# or this version allows variable substitution and quoted long values
+[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
 
-# Start Dependencies
-docker compose up -d
+# Login to az. Only required once per install.
+az login --tenant $AZURE_TENANT_ID
 
-# Start MLFlow server
-./script/start.sh
+# Create Azure CICD system identity
+./script/create_cicd_sh.sh
+# Adds CICD_CLIENT_ID=$created_clientid to .env
 ```
 
-Configure systemd file `/etc/systemd/system/mlflow.service` to start the MLFlow server on boot.
+## Configure GitHub
 
-```bash
-sudo cp ./mlflow.service /etc/systemd/system/mlflow.service
+Create GitHub secrets for storing Azure configuration.
 
-# Start the service
-sudo systemctl daemon-reload
-sudo systemctl start mlflow
-sudo systemctl enable mlflow
+Open your GitHub repository and go to Settings. Select Secrets and then New Secret. Create secrets with values from `.env` for:
 
-# Check the status
-sudo systemctl start mlflow
-sudo systemctl stop mlflow
-sudo systemctl restart mlflow
-sudo systemctl status mlflow
-journalctl -u mlflow
-```
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `CICD_CLIENT_ID`
+
+## Provision Resources
+
+Follow the instructions in each folder to provision resources.
+
+| Resource               | Instructions                                           |
+| ---------------------- | ------------------------------------------------------ |
+| Container Registry     | [./container_registry](./container_registry/README.md) |
+| MLFlow Tracking Server | [./mlflow_server](./mlflow_server/README.md)           |
+
+## Example Workflow
+
+- Train a model and register the model in MLFlow
+- Trigger the GitHub Actions workflow to Register the Model in AML model registry
+- Trigger the GitHub Action workflow to build and deploy the model serving image
+- Test the endpoint with a sample input
 
 # Development
 
@@ -152,112 +179,4 @@ pre-commit run --all-files codespell
 # Run linters outside of pre-commit
 codespell .
 shellcheck -x ./script/*.sh
-```
-
-# Deployment
-
-The project uses GitHub Actions to deploy the application.
-
-## Build Docker Image
-
-```bash
-# Build image
-model_name="dev.mlflow-sample-model-test_script"
-model_version="4"
-image="${model_name}_v${model_version}"
-image_version="2024.7.1.dev20240723T1400"
-artifact_path="./artifacts/iris_model"
-
-./script/devops.sh build_image --name "$image" --version "$image_version" --artifact_path "$artifact_path"
-
-# Run container
-image_name="${image}:${image_version}"
-docker run -p 5000:5000 "$image_name"
-# Get container ID
-container_id=$(docker ps -q --filter ancestor="$image_name")
-
-docker stop $(docker ps -q --filter ancestor="$image_name")
-
-```
-
-## Deploy Docker Image to Registry
-
-Deploy to Azure Container Registry
-
-```bash
-# load .env vars (optional)
-[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
-
-# Login to remote registry
-docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
-
-image="dev.mlflow-sample-model-test_script_v4"
-image_version="2024.7.1.dev20240723T1400"
-channel="dev"
-namespace="aimodelserving"
-
-./script/devops.sh publish_image --name "$image" --version "$image_version" --channel "$channel" --registry "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io" --namespace "$namespace"
-
-```
-
-Deploy to Artifactory Container Registry
-
-```bash
-# load .env vars (optional)
-[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
-
-# Login to remote registry
-docker login -u "$ARTIFACTORY_USERNAME" -p "$ARTIFACTORY_PASSWORD"  "$ARTIFACTORY_VM_IP"
-
-image="dev.mlflow-sample-model-test_script_v4"
-image_version="2024.7.1.dev20240723T1400"
-channel="dev"
-namespace="aimodelserving"
-
-./script/devops.sh publish_image --name "$image" --version "$image_version" --channel "$channel" --registry "$ARTIFACTORY_VM_IP" --namespace "$namespace"
-
-```
-
-# Deploy a Model to AML
-
-# Running
-
-## Server App
-
-The server app runs on an MLFlow server and is triggered when a new artifact is registered. The client triggers the GitHub CICD pipeline with the model artifact details.
-
-```bash
-# Optional - load .env vars
-[ -f .env ] && while IFS= read -r line; do [[ $line =~ ^[^#]*= ]] && eval "export $line"; done < .env
-
-# Run the server app code
-python ./server_app/main.py
-```
-
-## Tracking Server
-
-Login to the tracking server `http://<TRACKING_SERVER_IP>:5000`
-
-```bash
-# SSH into the Tracking Server
-ssh -i ~/.ssh/id_rsa azureuser@$TRACKING_SERVER_IP
-```
-
-## Model Serving Custom Docker Image
-
-The custom docker images serves the models.
-
-```bash
-# Run container
-docker run -p 5000:5000 "$image_name"
-
-# Interactive shell
-docker run -it --entrypoint /bin/bash -p 5000:5000  "$image_name"
-$ conda activate mlflow-env
-$ mlflow models serve -m "file:///app" -h "0.0.0.0" -p 5000 --no-conda
-
-# Check liveness
-curl --header "Content-Type: application/json" --request GET http://localhost:5000/version
-# Check prediction
-curl --header "Content-Type: application/json" --request POST --data @"${artifact_path}/input_example.json" http://localhost:5000/invocations
 ```
