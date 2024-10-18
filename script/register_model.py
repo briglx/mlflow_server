@@ -1,5 +1,6 @@
 """Register a model with Azure machine learning MLFlow tracking server."""
 
+# pylint: disable=R0801
 import argparse
 import os
 
@@ -108,8 +109,8 @@ if __name__ == "__main__":
     AZURE_CLIENT_ID = args.client_id or os.environ.get("AZURE_CLIENT_ID")
     AZURE_CLIENT_SECRET = args.client_secret or os.environ.get("AZURE_CLIENT_SECRET")
 
-    # if not AZURE_TENANT_ID:
-    #     raise ValueError("Azure tenant id is required. Have you set AZURE_TENANT_ID?")
+    if not AZURE_TENANT_ID:
+        raise ValueError("Azure tenant id is required. Have you set AZURE_TENANT_ID?")
 
     if not AZURE_SUBSCRIPTION_ID:
         raise ValueError(
@@ -131,13 +132,5 @@ if __name__ == "__main__":
 
     if not ARTIFACT_PATH:
         raise ValueError("Artifact path is required. Have you set ARTIFACT_PATH?")
-
-    # if not AZURE_CLIENT_ID:
-    #     raise ValueError("Azure client id is required. Have you set AZURE_CLIENT_ID?")
-
-    # if not AZURE_CLIENT_SECRET:
-    #     raise ValueError(
-    #         "Azure client secret is required. Have you set AZURE_CLIENT_SECRET?"
-    #     )
 
     register_model()

@@ -3,6 +3,13 @@ name: Admin Tasks
 on:
   workflow_dispatch:
     inputs:
+      admin_task:
+        description: "Task to run"
+        required: true
+        default: "build_image"
+        options:
+          - build_image
+          - deploy_endpoint
       image_name:
         description: "Name of the image to register"
         required: true
@@ -55,6 +62,7 @@ jobs:
           echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
           echo "RELEASE_CHANNEL=${channel}" >> $GITHUB_ENV
       - name: "Build Docker image"
+        if: ${{ github.event.inputs.admin_task == 'build_image' }}
         run: |
           model_name="${{ github.event.inputs.model_name }}"
           model_version="${{ github.event.inputs.model_version }}"
@@ -70,6 +78,7 @@ jobs:
           ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "." --dockerfile_path "$dockerfile_path"
 
       - name: Login to Azure Container Registry
+        if: ${{ github.event.inputs.admin_task == 'build_image' }}
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io
@@ -77,6 +86,7 @@ jobs:
           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Publish images to Azure Container Registry
+        if: ${{ github.event.inputs.admin_task == 'build_image' }}
         run: |
           model_name="${{ github.event.inputs.model_name }}"
           model_version="${{ github.event.inputs.model_version }}"
@@ -86,3 +96,16 @@ jobs:
 
           ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
           docker images
+      - name: Deploy Endpoint
+        if: ${{ github.event.inputs.admin_task == 'deploy_endpoint' }}
+        run: |
+          model_name="${{ github.event.inputs.model_name }}"
+          model_version="${{ github.event.inputs.model_version }}"
+
+          # Create image name and version
+          image="${model_name}_v${model_version}"
+
+
+          python ./script/deploy_model.py
+
+        #   ./script/devops.sh deploy_endpoint --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"

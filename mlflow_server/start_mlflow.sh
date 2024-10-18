@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Variables
-PROJ_ROOT_PATH=$(git rev-parse --show-toplevel)
+PROJ_ROOT_PATH=/mlflow_server
 ARTIFACT_ROOT="${PROJ_ROOT_PATH}/mlartifacts"
 HOST="0.0.0.0"
-PORT=5000
-LOGGING_CONF="mlflow_logging.conf"
+PORT=80
+LOGGING_CONF="${PROJ_ROOT_PATH}/mlflow_logging.conf"
 
 # Check if ARTIFACT_ROOT exists, if not, create it with proper permissions
 if [ ! -d "$ARTIFACT_ROOT" ]; then
@@ -35,15 +35,17 @@ if [ -f "${PROJ_ROOT_PATH}/.venv/bin/activate" ]; then
 fi
 
 echo "Starting MLflow server with the following parameters:"
+echo "Host: $HOST, Port: $PORT, Logging configuration: $LOGGING_CONF"
 mlflow server  \
   --host "$HOST" --port "$PORT" \
   --serve-artifacts  \
   --backend-store-uri sqlite:///mlflow.db \
-  --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
+  --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF" &
 
-# # Start MLflow server with logging configuration ========
-# mlflow server \
-#     --artifacts-destination s3://bucket \
-#     --backend-store-uri postgresql://user:password@localhost:5432/mlflowdb \
-#     --host "$HOST" --port "$PORT" \
-#     --gunicorn-opts "--log-level=debug --log-config $LOGGING_CONF"
+# Wait for the server to start
+sleep 5
+# Check if the server is running
+curl -X GET "http://$HOST:$PORT/health"
+echo "MLflow server is running at http://$HOST:$PORT"
+# Keep the container running
+tail -f /dev/null

@@ -1,6 +1,9 @@
 """Deploy a model to an Azure Machine Learning managed online endpoint."""
 
+# pylint: disable=R0801
+import argparse
 import os
+import random
 
 from azure.ai.ml import MLClient
 from azure.ai.ml.entities import (
@@ -12,23 +15,19 @@ from azure.ai.ml.entities import (
 )
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from dotenv import load_dotenv
+from utils import configure_logging
 
-# pylint: disable=W0104
-load_dotenv
+load_dotenv()
 
-# Azure General
-AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
-AZURE_SUBSCRIPTION_ID = os.environ.get("AZURE_SUBSCRIPTION_ID")
-AZURE_CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
-AZURE_CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
-
-# AML
-AZURE_ML_RESOURCE_GROUP = os.environ.get("AZURE_ML_RESOURCE_GROUP")
-AZURE_ML_WORKSPACE = os.environ.get("AZURE_ML_WORKSPACE")
+logger = configure_logging("register_model.log")
 
 
-def get_credentials():
-    """Get Azure credentials."""
+def main():
+    """Deploy a model to an Azure Machine Learning managed online endpoint."""
+    logger.info("Deploy model %s to Azure Machine Learning", MODEL_NAME)
+
+    endpoint_name = f"endpt-{random.randint(100000, 99999)}"
+
     # pylint: disable=R6103
     credential = DefaultAzureCredential()
     if not credential:
@@ -37,20 +36,14 @@ def get_credentials():
             client_id=AZURE_CLIENT_ID,
             client_secret=AZURE_CLIENT_SECRET,
         )
-
-    return credential
-
-
-def main():
-    """Deploy a model to an Azure Machine Learning managed online endpoint."""
-    credential = get_credentials()
     ml_client = MLClient(
         credential, AZURE_SUBSCRIPTION_ID, AZURE_ML_RESOURCE_GROUP, AZURE_ML_WORKSPACE
     )
 
+    # Create a managed online endpoint
     endpoint = ManagedOnlineEndpoint(
-        name="my_endpoint",
-        description="My endpoint description",
+        name=endpoint_name,
+        description="Custom image endpoint",
         auth_mode="key",
         public_network_access="disabled",
     )
@@ -96,4 +89,88 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Register AML Model.",
+        add_help=True,
+    )
+    parser.add_argument(
+        "--tenant_id",
+        "-t",
+        help="Azure Tenant Id where AML workspace is created",
+    )
+    parser.add_argument(
+        "--subscription_id",
+        "-s",
+        help="Azure Subscription Id where AML workspace is created",
+    )
+    parser.add_argument(
+        "--resource_group",
+        "-g",
+        help="Azure Resource Group where AML workspace is created",
+    )
+    parser.add_argument(
+        "--workspace",
+        "-w",
+        help="Azure Machine Learning Workspace Name",
+    )
+    parser.add_argument(
+        "--model_name",
+        "-n",
+        help="Model Name",
+    )
+    parser.add_argument(
+        "--artifact_path",
+        "-a",
+        help="Local path to the model artifacts",
+    )
+    parser.add_argument(
+        "--client_id",
+        "-c",
+        help="Azure Client Id with access to AML workspace",
+    )
+    parser.add_argument(
+        "--client_secret",
+        "-p",
+        help="Azure Client Secret with access to AML workspace",
+    )
+
+    args = parser.parse_args()
+
+    AZURE_TENANT_ID = args.tenant_id or os.environ.get("AZURE_TENANT_ID")
+    AZURE_SUBSCRIPTION_ID = args.subscription_id or os.environ.get(
+        "AZURE_SUBSCRIPTION_ID"
+    )
+    AZURE_ML_RESOURCE_GROUP = args.resource_group or os.environ.get(
+        "AZURE_ML_RESOURCE_GROUP"
+    )
+    AZURE_ML_WORKSPACE = args.workspace or os.environ.get("AZURE_ML_WORKSPACE")
+    MODEL_NAME = args.model_name or os.environ.get("MODEL_NAME")
+    ARTIFACT_PATH = args.artifact_path or os.environ.get("ARTIFACT_PATH")
+    AZURE_CLIENT_ID = args.client_id or os.environ.get("AZURE_CLIENT_ID")
+    AZURE_CLIENT_SECRET = args.client_secret or os.environ.get("AZURE_CLIENT_SECRET")
+
+    if not AZURE_TENANT_ID:
+        raise ValueError("Azure tenant id is required. Have you set AZURE_TENANT_ID?")
+
+    if not AZURE_SUBSCRIPTION_ID:
+        raise ValueError(
+            "Azure subscription id is required. Have you set AZURE_SUBSCRIPTION_ID?"
+        )
+
+    if not AZURE_ML_RESOURCE_GROUP:
+        raise ValueError(
+            "Azure resource group is required. Have you set AZURE_ML_RESOURCE_GROUP?"
+        )
+
+    if not AZURE_ML_WORKSPACE:
+        raise ValueError(
+            "Azure ML workspace is required. Have you set AZURE_ML_WORKSPACE?"
+        )
+
+    if not MODEL_NAME:
+        raise ValueError("Model name is required. Have you set MODEL_NAME?")
+
+    if not ARTIFACT_PATH:
+        raise ValueError("Artifact path is required. Have you set ARTIFACT_PATH?")
+
     main()
