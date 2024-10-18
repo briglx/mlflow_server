@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       admin_task:
+        type: choice
         description: "Task to run"
         required: true
         default: "build_image"
