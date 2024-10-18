@@ -111,7 +111,7 @@ jobs:
 
           # Create image name and version
           base_image="mlflow"
-          dockerfile_path="${{ github.workspace }}/online_endpont/{base_image}/Dockerfile"
+          dockerfile_path="${{ github.workspace }}/online_endpoint/{base_image}/Dockerfile"
           image="${base_image}_${model_name}_v${model_version}"
 
           # Get relative path to artifact
