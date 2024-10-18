@@ -1,5 +1,7 @@
 # Deploy a minimal custom container
 
+From [azureml-examples minimal](https://github.com/Azure/azureml-examples/blob/main/cli/endpoints/online/custom-container/minimal/single-model/pip-in-dockerfile/minimal-single-model-pip-in-dockerfile-deployment.yml)
+
 ```bash
 image_name="online_endpoint/minimal:latest"
 project_root="/workspaces/mlflow_server"

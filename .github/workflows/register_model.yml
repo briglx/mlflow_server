@@ -9,7 +9,7 @@ permissions:
   contents: read
 env:
   PYTHON_VERSION: "3.12"
-  PROJ_VERSION: "2024.7.1"
+  PROJ_VERSION: "2024.10.1"
   NAMESPACE: "aimodelserving"
 
 jobs:
@@ -87,30 +87,6 @@ jobs:
           AZURE_ML_RESOURCE_GROUP: ${{ secrets.AZURE_ML_RESOURCE_GROUP }}
           AZURE_ML_WORKSPACE: ${{ secrets.AZURE_ML_WORKSPACE }}
 
-      # - name: Get Model Artifact Url
-      #   run: |
-
-      #     model_name=${{ github.event.client_payload.model_name }}
-      #     model_version=${{ github.event.client_payload.model_version }}
-
-      #     # Get Artifact Url
-      #     if [ -n "$MLFLOW_USERNAME" ] && [ -n "$MLFLOW_PASSWORD" ]; then
-      #       echo curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-      #       curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-      #       artifact_url=$(curl -u "${MLFLOW_USERNAME}:${MLFLOW_PASSWORD}" -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}" | jq -r '.output')
-      #     else
-      #       echo Username and Password not provided
-      #       echo curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-      #       curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}"
-      #       artifact_url=$(curl -L "${MLFLOW_TRACKING_URI}/api/2.0/mlflow/model-versions/get-download-uri?name=${model_name}&version=${model_version}")
-      #     fi
-
-      #     echo "Artifact Url: $artifact_url" >> $GITHUB_ENV
-
-      # env:
-      #   MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-      #   MLFLOW_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-      #   MLFLOW_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
       - name: Get build version
         run: |
           proj_version="${{ env.PROJ_VERSION}}"
@@ -134,14 +110,16 @@ jobs:
           artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
           # Create image name and version
-          image="${model_name}_v${model_version}"
+          base_image="mlflow"
+          dockerfile_path="${{ github.workspace }}/online_endpont/{base_image}/Dockerfile"
+          image="${base_image}_${model_name}_v${model_version}"
 
           # Get relative path to artifact
           artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
 
           # Build Docker image
           echo "Building Docker image"
-          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "$artifact_path"
+          ./script/devops.sh build_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --artifact_path "$artifact_path" --dockerfile_path "$dockerfile_path"
 
       - name: Login to Azure Container Registry
         uses: docker/login-action@v3
@@ -156,7 +134,8 @@ jobs:
           model_version="${{ github.event.client_payload.model_version }}"
 
           # Create image name and version
-          image="${model_name}_v${model_version}"
+          base_image="mlflow"
+          image="${base_image}_${model_name}_v${model_version}"
 
           ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
           docker images
