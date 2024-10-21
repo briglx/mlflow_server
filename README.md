@@ -1,4 +1,4 @@
-# MLOps Example
+# MLOps Pipeline Example
 
 Example project implementation of MLOps using Databricks, MLFlow, GitHub Actions, and Azure Machine Learning.
 
