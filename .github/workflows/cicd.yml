@@ -35,7 +35,7 @@ jobs:
 
   pre-commit:
     name: Prepare pre-commit base
-    runs-on: ubuntu-22.latest
+    runs-on: ubuntu-latest
     needs:
       - info
     steps:
