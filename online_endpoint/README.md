@@ -150,3 +150,5 @@ namespace="aimodelserving"
 - https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-custom-container?view=azureml-api-2&tabs=cli
 - Extend AML Prebuilt docker images https://learn.microsoft.com/en-us/azure/machine-learning/how-to-extend-prebuilt-docker-image-inference?view=azureml-api-1
 - Azure Custom Container Examples https://github.com/Azure/azureml-examples/blob/main/cli/endpoints/online/custom-container/README.md
+- Base Images https://github.com/Azure/AzureML-Containers
+- Inside the aml Docker Image https://liupeirong.github.io/amlDockerImage/

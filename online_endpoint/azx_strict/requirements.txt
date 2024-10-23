@@ -1,0 +1,4 @@
+azureml-inference-server-http
+azureml-ai-monitoring
+azureml-defaults
+joblib

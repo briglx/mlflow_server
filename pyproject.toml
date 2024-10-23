@@ -56,7 +56,8 @@ combine_as_imports = true
 
 # Used with flake8
 [tool.pydocstyle]
-match-dir = '[^node_module].*'
+match = '^(?!.*(mlflow_score_script\.py)).*'
+match-dir = '^(?!.*node_module).*$'
 
 [tool.pylint.MAIN]
 py-version = "3.12"

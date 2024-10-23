@@ -1,0 +1,1 @@
+azureml-inference-server-http==1.3.2
