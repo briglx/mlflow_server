@@ -116,10 +116,10 @@ jobs:
           . venv/bin/activate
           pre-commit run --hook-stage manual codespell --all-files --show-diff-on-failure
 
-          - name: Run check-toml
-          run: |
-            . venv/bin/activate
-            pre-commit run --hook-stage manual check-toml --all-files --show-diff-on-failure
+      - name: Run check-toml
+        run: |
+          . venv/bin/activate
+          pre-commit run --hook-stage manual check-toml --all-files --show-diff-on-failure
 
       - name: Run check-yaml
         run: |
