@@ -8,6 +8,7 @@ permissions:
   id-token: write
   contents: read
 env:
+  BASE_IMAGE: "azx_mlflow"
   PYTHON_VERSION: "3.12"
   PROJ_VERSION: "2024.10.1"
   NAMESPACE: "aimodelserving"
@@ -110,9 +111,8 @@ jobs:
           artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
           # Create image name and version
-          base_image="azx_mlflow"
-          dockerfile_path="${{ github.workspace }}/online_endpoint/${base_image}/Dockerfile"
-          image="${base_image}_${model_name}_v${model_version}"
+          dockerfile_path="${{ github.workspace }}/online_endpoint/${{ env.BASE_IMAGE }}/Dockerfile"
+          image="${{ env.BASE_IMAGE }}_${model_name}_v${model_version}"
 
           # Get relative path to artifact
           artifact_path=$(realpath --relative-to="${{ github.workspace }}" "$artifact_path")
@@ -134,8 +134,7 @@ jobs:
           model_version="${{ github.event.client_payload.model_version }}"
 
           # Create image name and version
-          base_image="mlflow"
-          image="${base_image}_${model_name}_v${model_version}"
+          image="${{ env.BASE_IMAGE }}_${model_name}_v${model_version}"
 
           ./script/devops.sh publish_image --name "$image" --version "${{ env.RELEASE_VERSION }}" --channel "${{ env.RELEASE_CHANNEL }}" --registry "${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io" --namespace "${{ env.NAMESPACE }}"
           docker images
