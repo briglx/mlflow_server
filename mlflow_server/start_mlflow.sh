@@ -4,7 +4,7 @@
 PROJ_ROOT_PATH=/mlflow_server
 ARTIFACT_ROOT="${PROJ_ROOT_PATH}/mlartifacts"
 HOST="0.0.0.0"
-PORT=80
+PORT=${SERVER_PORT:-80}
 LOGGING_CONF="${PROJ_ROOT_PATH}/mlflow_logging.conf"
 
 # Check if ARTIFACT_ROOT exists, if not, create it with proper permissions

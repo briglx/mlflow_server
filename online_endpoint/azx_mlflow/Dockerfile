@@ -9,12 +9,12 @@ USER dockeruser
 ENV APP_PATH=/var/azureml-app
 ENV APP_MODEL_PATH=${APP_PATH}/model
 ENV APP_SERVER_PATH=${APP_PATH}/server
-ENV USER_ENV=userenv
+ENV BUILD_ENV=bldenv
 
 # Conda is already installed
 ENV CONDA_ENV_DIR=/opt/miniconda/envs
 ENV AZUREML_MODEL_DIR=$APP_MODEL_PATH
-ENV AZUREML_CONDA_ENVIRONMENT_PATH="$CONDA_ENV_DIR/$USER_ENV"
+ENV AZUREML_CONDA_ENVIRONMENT_PATH="$CONDA_ENV_DIR/$BUILD_ENV"
 ENV PATH="$AZUREML_CONDA_ENVIRONMENT_PATH/bin:$PATH"
 ENV LD_LIBRARY_PATH="$AZUREML_CONDA_ENVIRONMENT_PATH/lib:$LD_LIBRARY_PATH"
 ENV MLFLOW_MODEL_FOLDER=""
@@ -36,12 +36,17 @@ COPY ${BASE_PATH}/requirements.txt $APP_SERVER_PATH/requirements.txt
 #     rm -rf /root/.cache/pip /tmp/conda.yaml /tmp/requirements.txt
 
 # Create conda environment from model conda.yaml and install server requirements
-RUN conda env create -n $USER_ENV -f ${APP_MODEL_PATH}/conda.yaml && \
+RUN conda env create -n $BUILD_ENV -f ${APP_MODEL_PATH}/conda.yaml && \
     export SERVER_VERSION=$(pip show azureml-inference-server-http | grep Version | sed -e 's/.*: //')  && \
     $AZUREML_CONDA_ENVIRONMENT_PATH/bin/pip install -r $APP_SERVER_PATH/requirements.txt
 
+# Install lsof
+USER root
+RUN apt-get update && apt-get install -y lsof  && rm -rf /var/lib/apt/lists/*
+USER dockeruser
+
 # Expose necessary ports
-EXPOSE 5001
+EXPOSE 5001 31311
 
 # Start the service
 CMD ["runsvdir", "/var/runit"]

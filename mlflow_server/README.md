@@ -16,16 +16,23 @@ project_root=$(git rev-parse --show-toplevel)
 dockerfile_path="${project_root}/mlflow_server/Dockerfile"
 image_name="mlflow-server"
 
-# Build image
-docker build -t "$image_name" -f "${dockerfile_path}" "${project_root}"
+# Build image for local testing
+docker build --build-arg "SERVER_PORT=5001" -t "${image_name}.dev" -f "${dockerfile_path}" "${project_root}"
 
 # Run container locally
-docker run -p 5000:80 "$image_name"
+docker run -p 5001:5001 "${image_name}.dev"
 
 # Interactive shell
-docker run -it --entrypoint /bin/bash -p 5000:80  "$image_name"
+docker run -it --entrypoint /bin/bash -p 5001:5001  "${image_name}.dev"
+# Run the service
+./start_mlflow.sh
 
-# Login to the tracking server http://localhost:5000
+# Check livliness
+curl -p 127.0.0.1:5001/health
+# Login to the tracking server http://localhost:5001
+
+# Build for deployment
+docker build -t "$image_name" -f "${dockerfile_path}" "${project_root}"
 ```
 
 Deploy image to a new container app
@@ -39,15 +46,41 @@ Deploy image to a new container app
 # Login to cloud cli. Only required once per install.
 az login --tenant $AZURE_TENANT_ID
 az acr login --name "${AZURE_CONTAINER_REGISTRY_NAME}"
+docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
 
-# Tag and Create container app
-docker tag "${image_name}" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
-docker push "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
-response=$(az container create -g "$ACI_RESOURCE_GROUP" --name "mlflowserver" --image "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}" --cpu 1 --memory 1 --registry-username "$AZURE_CONTAINER_REGISTRY_USERNAME"  --registry-password "$AZURE_CONTAINER_REGISTRY_PASSWORD" --ip-address Public --ports 80 443)
+registry_host="${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
+namespace="infra"
+current_date_time=$(date +"%Y%m%dT%H%M")
+tag="2024.10.1.dev${current_date_time}"
+
+# Tag and Publish Dev Version
+docker tag "${image_name}" "${registry_host}/${namespace}/${image_name}:${tag}"
+docker push "${registry_host}/${namespace}/${image_name}:${tag}"
+
+# Tag and Publish Prod Version
+docker tag "${image_name}" "${registry_host}/${namespace}/${image_name}:latest"
+docker push "${registry_host}/${namespace}/${image_name}:latest"
+
+# Create container app
+# docker tag "${image_name}" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
+# docker push "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
+response=$(az container create -g "$MLFOW_ACI_RESOURCE_GROUP" --name "mlflowserver" --image "${registry_host}/${namespace}/${image_name}:latest" --cpu 1 --memory 1 --registry-username "$AZURE_CONTAINER_REGISTRY_USERNAME"  --registry-password "$AZURE_CONTAINER_REGISTRY_PASSWORD" --ip-address Public --ports 80 443)
 ip_address=$(echo "$response" | jq -r '.ipAddress.ip')
+iso_date_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+{
+    echo ""
+    echo "# Script ./mlflow_server/README.md - output variables."
+    echo "# Generated on $iso_date_utc"
+    echo "MLFLOW_TRACKING_IP=${ip_address}"
+    echo "MLFLOW_TRACKING_URI=http://${ip_address}"
+}>> "./.env"
 
-# Login to the tracking server
-echo "MLFlow server running at http://$ip_address"
+
+# Check livliness
+curl -p ${ip_address}/health
+# Login to the tracking server http://${ip_address}:5001
+
+
 ```
 
 ### VM Provisioning

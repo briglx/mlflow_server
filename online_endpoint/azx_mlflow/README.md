@@ -18,12 +18,9 @@ docker run -p 5000:5000 -p 31311:31311 "$image_name"
 docker run -it --entrypoint /bin/bash -p 5000:5000 -p 31311:31311  "$image_name"
 # Start service in container
 $ runsvdir /var/runit
-# $ azmlinfsrv --entry_script score.py --port 5000
-# $ azmlinfsrv --entry_script ./onlinescoring/score.py --model_dir ./ --port 5000
 
 # Connect to running image
 docker exec -it $(docker ps --filter "ancestor=$image_name"  -q ) /bin/bash
-
 
 # Check liveness
 curl -p 127.0.0.1:5000
@@ -39,6 +36,33 @@ curl -X POST 127.0.0.1:31311/score -H "Content-Type: application/json" -d @$base
 
 Various debugging notes On the Docker image
 
+## Reverse enginering azure-inference-server and scoring script
+
+Key environment variables include
+
+```
+AZUREML_ENTRY_SCRIPT=/mnt/d/tests/manual/default_score.py
+AZUREML_MODEL_DIR=/var/azureml-app/model
+MLFLOW_MODEL_FOLDER
+
+# Server looks for
+AZUREML_MODEL_DIR/{model}/{version}
+
+Server startup script dynamically creates a flask app with the user_script loaded
+server/blueprint.setup() then starts gunicorn and points to the app
+# Server loads the user script
+	self.user_script = UserScript(config.entry_script)
+	self.user_script.load_script(config.app_root)
+		script_location = os.path.join(app_root, self.entry_script.replace("/", os.sep))
+	self.user_script.invoke_init()
+
+-----------
+# Scoring Script - Can dynamically load the specific model
+model_path = os.path.join(
+    os.getenv("AZUREML_MODEL_DIR"), os.getenv("MLFLOW_MODEL_FOLDER")
+)
+```
+
 ## General Startup
 
 ```bash
@@ -46,8 +70,8 @@ $ conda env list
 # conda environments:
 #
 base                     /opt/miniconda
+bldenv                *  /opt/miniconda/envs/bldenv
 amlenv                   /opt/miniconda/envs/amlenv
-userenv               *  /opt/miniconda/envs/userenv
 
 $ printenv
 CONDA_SHLVL=2
