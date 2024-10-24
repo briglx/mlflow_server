@@ -110,7 +110,7 @@ jobs:
           artifact_path=${{ steps.download_artifacts.outputs.artifact_path }}
 
           # Create image name and version
-          base_image="mlflow"
+          base_image="azx_mlflow"
           dockerfile_path="${{ github.workspace }}/online_endpoint/${base_image}/Dockerfile"
           image="${base_image}_${model_name}_v${model_version}"
 

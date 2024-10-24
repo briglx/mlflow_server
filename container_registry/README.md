@@ -32,3 +32,13 @@ docker tag "${image}:${tag}" "${registry_host}/${namespace}/${image}:${tag}"
 docker push "${registry_host}/${namespace}/${image}:${tag}"
 # Successfully pushed
 ```
+
+# Update Github Secrets
+
+Add the following secrets to your GitHub repository:
+
+```bash
+registry: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io
+username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+```
