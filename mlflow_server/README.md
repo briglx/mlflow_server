@@ -49,7 +49,7 @@ az acr login --name "${AZURE_CONTAINER_REGISTRY_NAME}"
 docker login -u "$AZURE_CONTAINER_REGISTRY_USERNAME" -p "$AZURE_CONTAINER_REGISTRY_PASSWORD" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
 
 registry_host="${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io"
-namespace="infra"
+namespace="$AZURE_CONTAINER_INFRA_NAMESPACE"
 current_date_time=$(date +"%Y%m%dT%H%M")
 tag="2024.10.1.dev${current_date_time}"
 

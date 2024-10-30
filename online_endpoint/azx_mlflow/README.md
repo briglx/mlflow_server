@@ -12,10 +12,10 @@ artifact_path="./artifacts/iris_model"
 docker build --build-arg "ARTIFACT_PATH=$artifact_path" --build-arg "BASE_PATH=$base_path" -t "$image_name" -f "${dockerfile_path}" .
 
 # Run container
-docker run -p 5000:5000 -p 31311:31311 "$image_name"
+docker run -p 5001:5001 -p 31311:31311 "$image_name"
 
 # Interactive shell
-docker run -it --entrypoint /bin/bash -p 5000:5000 -p 31311:31311  "$image_name"
+docker run -it --entrypoint /bin/bash -p 5001:5001 -p 31311:31311  "$image_name"
 # Start service in container
 $ runsvdir /var/runit
 
@@ -23,12 +23,15 @@ $ runsvdir /var/runit
 docker exec -it $(docker ps --filter "ancestor=$image_name"  -q ) /bin/bash
 
 # Check liveness
-curl -p 127.0.0.1:5000
-curl --header "Content-Type: application/json" --request GET http://localhost:5000/
+curl -p 127.0.0.1:5001
+curl --header "Content-Type: application/json" --request GET http://localhost:5001/
+
+# Check swagger
+curl -p 127.0.0.1:5001/swagger.json
 
 # Check prediction
-curl -p 127.0.0.1:5000/score
-curl --header "Content-Type: application/json" --request GET http://localhost:5000/score
+curl -p 127.0.0.1:5001/score
+curl --header "Content-Type: application/json" --request GET http://localhost:5001/score
 curl -X POST 127.0.0.1:31311/score -H "Content-Type: application/json" -d @$base_path/input_example.json
 ```
 

@@ -66,6 +66,7 @@ Follow the instructions in each folder to provision resources.
 
 | Resource               | Instructions                                           |
 | ---------------------- | ------------------------------------------------------ |
+| AML Workspace          | [./aml_workspace](./aml_workspace/README.md)           |
 | Container Registry     | [./container_registry](./container_registry/README.md) |
 | MLFlow Tracking Server | [./mlflow_server](./mlflow_server/README.md)           |
 
@@ -163,7 +164,7 @@ One exception is for logging which uses the percentage formatting. This is to av
 _LOGGER.info("Can't connect to the webservice %s at %s", string1, string2)
 ```
 
-### Testing
+## Testing
 
 Ideally, all code is checked to verify the following:
 

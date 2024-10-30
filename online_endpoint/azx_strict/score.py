@@ -5,6 +5,7 @@ import json
 import logging
 import os
 
+# pylint: disable=E0401, E0611
 from azureml.ai.monitoring import Collector
 import joblib
 import numpy
