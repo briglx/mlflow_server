@@ -64,7 +64,18 @@ docker push "${registry_host}/${namespace}/${image_name}:latest"
 # Create container app
 # docker tag "${image_name}" "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
 # docker push "${AZURE_CONTAINER_REGISTRY_NAME}.azurecr.io/${image_name}"
-response=$(az container create -g "$MLFOW_ACI_RESOURCE_GROUP" --name "mlflowserver" --image "${registry_host}/${namespace}/${image_name}:latest" --cpu 1 --memory 1 --registry-username "$AZURE_CONTAINER_REGISTRY_USERNAME"  --registry-password "$AZURE_CONTAINER_REGISTRY_PASSWORD" --ip-address Public --ports 80 443)
+response=$(
+    az container create \
+        -g "$MLFOW_ACI_RESOURCE_GROUP" \
+        --name "mlflowserver" \
+        --image "${registry_host}/${namespace}/${image_name}:latest" \
+        --cpu 1 \
+        --memory 1 \
+        --registry-username "$AZURE_CONTAINER_REGISTRY_USERNAME"  \
+        --registry-password "$AZURE_CONTAINER_REGISTRY_PASSWORD" \
+        --ip-address Public \
+        --ports 80 443
+    )
 ip_address=$(echo "$response" | jq -r '.ipAddress.ip')
 iso_date_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 {
