@@ -122,3 +122,5 @@ artifacts
 # Artifactory
 artifactory/home
 artifactory/home_oss
+
+workspace.json
